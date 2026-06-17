@@ -1,0 +1,1 @@
+export { DocumentPageView } from './DocumentPageView';

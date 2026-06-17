@@ -1,0 +1,227 @@
+/* Published instructions — brand ТСК «Дровосек» */
+:root {
+  --drovosek-primary: #f26522;
+  --drovosek-text: #1a1a1a;
+  --drovosek-border: #e8e8e8;
+}
+
+.document-root {
+  font-family: 'DejaVu Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: var(--drovosek-text);
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 12mm;
+}
+
+.doc-block {
+  margin-bottom: 0.85em;
+}
+
+.doc-block h1,
+.doc-block h2,
+.doc-block h3,
+.doc-block h4 {
+  color: var(--drovosek-primary);
+  margin: 0.6em 0 0.3em;
+  font-weight: 700;
+}
+
+.doc-block table.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10pt;
+}
+
+.doc-block table.doc-table--nested {
+  margin: 0.35em 0;
+  font-size: 9pt;
+}
+
+.doc-raw-ooxml {
+  padding: 0.5em 0.75em;
+  border: 1px dashed var(--drovosek-border);
+  background: #fafafa;
+  font-size: 10pt;
+  color: #666;
+}
+
+.doc-block table.doc-table th {
+  background: #fff5ef;
+  color: var(--drovosek-text);
+  font-weight: 600;
+}
+
+.doc-block table.doc-table td,
+.doc-block table.doc-table th {
+  border: 1px solid var(--drovosek-border);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.doc-block ul.doc-list,
+.doc-block ol.doc-list {
+  margin: 0.5em 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.doc-block ul.doc-list li,
+.doc-block ol.doc-list li {
+  margin-bottom: 0.35em;
+}
+
+.doc-block ul.doc-list--disc > li::before {
+  content: '•\00a0';
+  margin-right: 0.35em;
+}
+
+.doc-block ul.doc-list--dash > li::before {
+  content: '-\00a0';
+  margin-right: 0.35em;
+}
+
+.doc-block ol.doc-list--decimal {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+
+.doc-block ol.doc-list--decimal > li::before {
+  content: none;
+}
+
+.doc-image {
+  margin: 0.75em 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.doc-image img {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+}
+
+.doc-paragraph--inline-images {
+  margin: 0.75em 0;
+  line-height: 0;
+}
+
+.doc-image--inline {
+  display: inline-block;
+  margin: 0;
+  max-width: none;
+  vertical-align: bottom;
+  overflow: visible;
+}
+
+.doc-image--inline img {
+  display: block;
+  max-width: none;
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+}
+
+.doc-paragraph--symbols {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  margin: 0.5em 0;
+}
+
+.doc-symbol-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75em;
+  margin: 0.5em 0;
+}
+
+.doc-symbol-row + .doc-symbol-row {
+  margin-top: 0.25em;
+}
+
+.doc-symbol-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.15em;
+}
+
+.doc-symbol-row .doc-symbol-icons .doc-image--inline {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.doc-symbol-row .doc-textbox {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.doc-symbol-row .doc-textbox--anchored,
+.doc-symbol-row .doc-textbox[style*='position:absolute'],
+.doc-symbol-row .doc-textbox[style*='position: absolute'] {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: auto !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+
+.doc-paragraph--symbol-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75em;
+  margin: 0.5em 0;
+}
+
+.doc-image--unsupported .doc-image__unsupported-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: #e6f4ff;
+  color: #1677ff;
+}
+
+.doc-image--unsupported .doc-image__unsupported-icon::before {
+  content: "ℹ";
+  font-size: 14px;
+  line-height: 1;
+}
+
+.doc-block strong {
+  font-weight: 700;
+}
+
+/* Quill alignment classes saved before inline-style migration */
+.doc-block .ql-align-center {
+  text-align: center;
+}
+
+.doc-block .ql-align-right {
+  text-align: right;
+}
+
+.doc-block .ql-align-justify {
+  text-align: justify;
+}
+
+@media print {
+  .document-root {
+    padding: 0;
+  }
+
+  .doc-block {
+    break-inside: avoid-page;
+  }
+}

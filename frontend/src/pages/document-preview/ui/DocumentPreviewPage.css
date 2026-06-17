@@ -1,0 +1,15 @@
+.document-preview-toolbar {
+  max-width: 210mm;
+  margin: 0 auto 16px;
+  padding: 0 12mm;
+}
+
+.document-preview-page.document-page {
+  padding-top: 0;
+}
+
+@media print {
+  .document-preview-toolbar {
+    display: none !important;
+  }
+}

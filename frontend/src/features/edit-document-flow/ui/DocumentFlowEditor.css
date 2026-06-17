@@ -1,0 +1,136 @@
+.document-flow-editor-wrap {
+  background: #d8d8d8;
+}
+
+.document-flow-editor {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 24px 24px 64px;
+}
+
+.document-flow-editor__canvas {
+  position: relative;
+  width: var(--document-page-width, 210mm);
+  max-width: 100%;
+  flex: 0 0 auto;
+  margin: 0 auto;
+}
+
+.document-flow-editor__page-frame {
+  width: 100%;
+  min-height: var(--document-page-height, 297mm);
+  box-sizing: border-box;
+  padding: var(--document-page-margin-top, var(--document-page-margin, 15mm))
+    var(--document-page-margin-right, var(--document-page-margin, 15mm))
+    var(--document-page-margin-bottom, var(--document-page-margin, 15mm))
+    var(--document-page-margin-left, var(--document-page-margin, 15mm));
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.document-flow-editor__content {
+  display: block;
+  width: 100%;
+  min-height: calc(
+    var(--document-page-height, 297mm) - var(--document-page-margin-top, var(--document-page-margin, 15mm)) -
+      var(--document-page-margin-bottom, var(--document-page-margin, 15mm))
+  );
+  outline: none;
+  cursor: text;
+  font-family: var(--document-default-font, 'DejaVu Serif', 'Liberation Serif', 'Times New Roman', Times, serif);
+  font-size: var(--document-default-size, 12pt);
+  line-height: var(--document-default-line-height, 1.15);
+  color: var(--document-default-color, #1a1a1a);
+}
+
+.document-flow-editor__content:focus {
+  outline: none;
+}
+
+.document-flow-editor__content .doc-flow-block {
+  outline: none;
+  border-radius: 4px;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.document-flow-editor__content .doc-flow-block--page-break-before {
+  border-top: 1px dashed rgba(242, 101, 34, 0.45);
+}
+
+.document-flow-editor__content .doc-flow-block--highlight {
+  animation: doc-flow-block-flash 1.2s ease;
+}
+
+@keyframes doc-flow-block-flash {
+  0%,
+  100% {
+    background: transparent;
+  }
+
+  30% {
+    background: rgba(255, 245, 239, 0.8);
+  }
+}
+
+.document-flow-editor__content .doc-flow-block--active {
+  border-radius: 4px;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='image'] {
+  cursor: pointer;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='image']:hover .doc-image,
+.document-flow-editor__content .doc-flow-block[data-block-type='image'].doc-flow-block--active .doc-image {
+  outline: 2px solid rgba(242, 101, 34, 0.45);
+  outline-offset: 2px;
+}
+
+.document-flow-editor__content .doc-image img {
+  border-radius: 4px;
+}
+
+.document-flow-editor__content .doc-image--pending .doc-image__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 24px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+}
+
+.document-flow-editor__content .doc-image--pending .doc-image__placeholder span::before {
+  content: '🖼 ';
+}
+
+/* Figure gallery: shared canvas coordinates for images, arrows, and labels. */
+.document-flow-editor__content .doc-figure-gallery--positioned {
+  position: relative;
+  display: block;
+}
+
+.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-gallery__canvas,
+.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-gallery__captions {
+  position: relative;
+}
+
+.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-caption-cell {
+  margin: 0;
+  text-align: center;
+}
+
+.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-caption-cell .doc-figure-caption {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.document-flow-editor__content .doc-figure-gallery--positioned .doc-image--inline {
+  margin: 0;
+}

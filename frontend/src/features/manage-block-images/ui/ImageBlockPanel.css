@@ -1,0 +1,40 @@
+.image-block-panel__title {
+  margin: 0 0 8px !important;
+}
+
+.image-block-panel__hint {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 16px;
+  line-height: 1.45;
+}
+
+.image-block-panel__preview {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.image-block-panel__preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.image-block-panel__dropzone {
+  border-radius: 8px !important;
+}
+
+.image-block-panel__field {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.image-block-panel__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}

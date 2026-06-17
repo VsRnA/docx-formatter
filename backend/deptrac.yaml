@@ -1,0 +1,40 @@
+deptrac:
+  paths:
+    - ./app
+  exclude_files:
+    - '#.*Test\.php$#'
+  layers:
+    - name: Domain
+      collectors:
+        - type: directory
+          value: app/Domain/.*
+    - name: Application
+      collectors:
+        - type: directory
+          value: app/Application/.*
+    - name: Infrastructure
+      collectors:
+        - type: directory
+          value: app/Infrastructure/.*
+    - name: Interface
+      collectors:
+        - type: directory
+          value: app/Http/.*
+        - type: directory
+          value: app/Jobs/.*
+        - type: directory
+          value: app/Console/.*
+  ruleset:
+    Domain:
+      - Domain
+    Application:
+      - Domain
+      - Application
+    Infrastructure:
+      - Domain
+      - Application
+      - Infrastructure
+    Interface:
+      - Domain
+      - Application
+      - Interface

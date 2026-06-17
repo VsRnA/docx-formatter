@@ -1,0 +1,602 @@
+/**
+ * Shared with backend/public/css/document-export.css (keep typography in sync).
+ * Fonts: system/local only — no bundled or copied font files.
+ * PDF (wkhtmltopdf in Docker) uses fonts-dejavu-core from apt; browser uses local() if installed.
+ */
+
+:root {
+  --document-page-width: 210mm;
+  --document-page-height: 297mm;
+  --document-page-margin: 15mm;
+  --document-page-margin-top: var(--document-page-margin);
+  --document-page-margin-right: var(--document-page-margin);
+  --document-page-margin-bottom: var(--document-page-margin);
+  --document-page-margin-left: var(--document-page-margin);
+  --document-default-font: 'DejaVu Serif', 'Liberation Serif', 'Times New Roman', Times, serif;
+  --document-default-size: 12pt;
+  --document-default-line-height: 1.15;
+  --document-default-color: #1a1a1a;
+}
+
+.document-page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 24px 64px;
+  background: #d8d8d8;
+}
+
+.document-page-frame {
+  width: var(--document-page-width);
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: var(--document-page-height);
+  padding: var(--document-page-margin-top) var(--document-page-margin-right)
+    var(--document-page-margin-bottom) var(--document-page-margin-left);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.document-root {
+  font-family: var(--document-default-font);
+  font-size: var(--document-default-size);
+  line-height: var(--document-default-line-height);
+  color: var(--document-default-color);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.document-flow-editor__content.document-root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.document-root p,
+.document-root h1,
+.document-root h2,
+.document-root h3,
+.document-root h4,
+.document-root h5,
+.document-root h6 {
+  margin: 0;
+}
+
+.doc-block,
+.doc-flow-block {
+  margin-bottom: 0.85em;
+  max-width: 100%;
+}
+
+.doc-block--page-break-before,
+.doc-flow-block--page-break-before {
+  break-before: page;
+  page-break-before: always;
+}
+
+.doc-block ul.doc-list,
+.doc-block ol.doc-list,
+.doc-flow-block ul.doc-list,
+.doc-flow-block ol.doc-list {
+  margin: 0.5em 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.doc-block ul.doc-list li,
+.doc-block ol.doc-list li,
+.doc-flow-block ul.doc-list li,
+.doc-flow-block ol.doc-list li {
+  margin-bottom: 0.35em;
+}
+
+.doc-block ul.doc-list--disc > li::before,
+.doc-flow-block ul.doc-list--disc > li::before {
+  content: '•\00a0';
+  margin-right: 0.35em;
+}
+
+.doc-block ul.doc-list--dash > li::before,
+.doc-flow-block ul.doc-list--dash > li::before {
+  content: '-\00a0';
+  margin-right: 0.35em;
+}
+
+.doc-block ol.doc-list--decimal,
+.doc-flow-block ol.doc-list--decimal {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+
+.doc-block ol.doc-list--decimal > li::before,
+.doc-flow-block ol.doc-list--decimal > li::before {
+  content: none;
+}
+
+.doc-image {
+  margin: 0.75em 0;
+  max-width: 100%;
+}
+
+.doc-image img {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+}
+
+.doc-paragraph--inline-images {
+  margin: 0.75em 0;
+  line-height: 0;
+}
+
+.doc-paragraph--figure-gallery {
+  margin: 0.75em 0;
+  line-height: 1.2;
+}
+
+.doc-figure-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.doc-figure-gallery--positioned {
+  position: relative;
+  display: block;
+  overflow: visible;
+}
+
+.doc-figure-gallery--positioned .doc-figure-gallery__canvas {
+  position: relative;
+  overflow: visible;
+}
+
+.doc-figure-gallery--positioned .doc-figure-gallery__canvas > .doc-image--inline {
+  position: absolute;
+  margin: 0;
+  max-width: none;
+}
+
+.doc-figure-gallery--positioned .doc-figure-gallery__captions {
+  position: relative;
+}
+
+.doc-figure-gallery--positioned .doc-figure-caption-cell {
+  margin: 0;
+  text-align: center;
+}
+
+.doc-figure-gallery--positioned .doc-figure-caption-cell .doc-figure-caption {
+  display: block;
+  width: 100%;
+  margin: 0.25em 0 0;
+  text-align: center;
+}
+
+.doc-figure-gallery--positioned .doc-image--inline {
+  display: block;
+  margin: 0;
+  max-width: none;
+}
+
+.doc-figure-gallery--positioned .doc-image--inline img {
+  display: block;
+  max-width: none;
+  width: auto;
+  height: auto;
+}
+
+.doc-figure-gallery--positioned .doc-anchor-shape {
+  z-index: 3;
+}
+
+.doc-figure-gallery--positioned .doc-figure-overlay {
+  z-index: 4;
+}
+
+.doc-figure-canvas {
+  position: relative;
+  display: block;
+  overflow: visible;
+}
+
+.doc-figure-canvas__layer {
+  position: relative;
+  overflow: visible;
+}
+
+.doc-figure-canvas__layer > .doc-image--inline,
+.doc-figure-canvas__layer > .doc-image {
+  position: absolute;
+  margin: 0;
+  max-width: none;
+}
+
+.doc-figure-canvas__layer > .doc-image--inline img,
+.doc-figure-canvas__layer > .doc-image img {
+  display: block;
+  max-width: none;
+  width: auto;
+  height: auto;
+}
+
+.doc-figure-canvas__captions {
+  position: relative;
+}
+
+.doc-figure-canvas__captions .doc-figure-caption-cell {
+  margin: 0;
+  text-align: center;
+}
+
+.doc-figure-canvas__captions .doc-figure-caption-cell .doc-figure-caption {
+  display: block;
+  width: 100%;
+  margin: 0.25em 0 0;
+  text-align: center;
+}
+
+.doc-figure-canvas .doc-anchor-shape {
+  z-index: 3;
+}
+
+.doc-figure-canvas .doc-figure-overlay {
+  z-index: 4;
+}
+
+.doc-figure-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  flex: 0 0 auto;
+  vertical-align: bottom;
+}
+
+.doc-figure-frame {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  line-height: 0;
+}
+
+.doc-figure-frame .doc-image {
+  margin: 0;
+}
+
+.doc-figure-frame .doc-image img {
+  display: block;
+  max-width: none;
+  width: auto;
+  height: auto;
+}
+
+.doc-figure-overlay {
+  color: #fff;
+  font-size: 10pt;
+  line-height: 1.15;
+  text-shadow:
+    0 0 2px #000,
+    0 1px 3px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+
+.doc-figure-overlay strong {
+  font-weight: 700;
+}
+
+.doc-figure-caption {
+  display: block;
+  width: 100%;
+  margin: 0.25em 0 0.5em;
+  text-align: center;
+  font-size: 10.5pt;
+  line-height: 1.2;
+}
+
+.doc-figure-gallery .doc-image {
+  margin: 0;
+}
+
+.doc-image--inline {
+  display: inline-block;
+  margin: 0;
+  max-width: none;
+  vertical-align: bottom;
+}
+
+.doc-image--inline img {
+  display: block;
+  max-width: none;
+}
+
+.doc-anchored-canvas {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+}
+
+.doc-anchored-canvas .doc-image--inline {
+  margin: 0;
+}
+
+.doc-anchored-canvas .doc-callout {
+  font-size: inherit;
+  line-height: 1.1;
+}
+
+.doc-anchored-canvas .doc-anchor-shape {
+  overflow: visible;
+}
+
+.doc-page-overlay {
+  position: relative;
+  overflow: hidden;
+  max-height: 140px;
+  margin: 0.5em 0;
+}
+
+.doc-page-overlay > span,
+.doc-page-overlay > strong {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+}
+
+.doc-image--page-decoration {
+  margin: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
+.doc-image--page-decoration-left {
+  left: 0;
+}
+
+.doc-image--page-decoration-right {
+  right: 0;
+}
+
+.doc-image--page-decoration img {
+  display: block;
+  max-height: 120px;
+  width: auto;
+  height: auto;
+}
+
+.doc-page-overlay .doc-symbol-row {
+  position: relative;
+  z-index: 2;
+}
+
+.doc-image--anchored {
+  margin: 0;
+}
+
+.doc-image--anchored img {
+  display: block;
+}
+
+.doc-paragraph--symbols {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0.5em 0;
+}
+
+.doc-symbol-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0.5em 0;
+}
+
+.doc-symbol-row + .doc-symbol-row {
+  margin-top: 0.25em;
+}
+
+.doc-symbol-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 2px;
+  min-width: 3.5em;
+}
+
+.doc-symbol-icons--row {
+  flex-direction: row;
+  gap: 0.35em;
+}
+
+.doc-symbol-row .doc-symbol-icons .doc-image--inline {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.doc-symbol-row .doc-symbol-icons .doc-image--inline img {
+  flex-shrink: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+}
+
+.doc-symbol-row .doc-textbox {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.4;
+  font-size: 12pt;
+}
+
+/* Symbol rows lay out icon + text via flex; inline OOXML anchor offsets clip first chars. */
+.doc-symbol-row .doc-textbox--anchored,
+.doc-symbol-row .doc-textbox[style*='position:absolute'],
+.doc-symbol-row .doc-textbox[style*='position: absolute'] {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: auto !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+
+.doc-textbox--anchored {
+  flex: none;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+@media print {
+  .doc-symbol-row {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    gap: 0;
+  }
+
+  .doc-symbol-icons {
+    display: table-cell;
+    vertical-align: middle;
+    width: 4.5em;
+    padding-right: 0.75em;
+  }
+
+  .doc-symbol-row .doc-textbox {
+    display: table-cell;
+    vertical-align: middle;
+  }
+}
+
+.doc-block .doc-paragraph--symbols {
+  margin-bottom: 0.25em;
+}
+
+.doc-paragraph--symbol-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0.5em 0;
+}
+
+.doc-image[style*='center'] img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.doc-image[style*='right'] img {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.doc-image--unsupported {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 2px 6px;
+  border: 1px dashed #bbb;
+  border-radius: 4px;
+}
+
+.doc-image--unsupported .doc-image__unsupported-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #e6f4ff;
+  color: #1677ff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.doc-image--unsupported .doc-image__unsupported-caption {
+  font-size: 10px;
+  color: #888;
+}
+
+.doc-block table.doc-table,
+.doc-flow-block table.doc-table {
+  border-collapse: collapse;
+  font-size: 10pt;
+  max-width: 100%;
+}
+
+.doc-block table.doc-table:not([style*='width']),
+.doc-flow-block table.doc-table:not([style*='width']) {
+  width: 100%;
+}
+
+.doc-block table.doc-table:not(.doc-table--layout) td,
+.doc-block table.doc-table:not(.doc-table--layout) th,
+.doc-flow-block table.doc-table:not(.doc-table--layout) td,
+.doc-flow-block table.doc-table:not(.doc-table--layout) th {
+  border: 1px solid #ccc;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+/* Layout tables (no inline borders in source): preserve Word positioning,
+   do not impose borders or full width. Inline cell styles still apply. */
+.doc-block table.doc-table--layout,
+.doc-flow-block table.doc-table--layout {
+  width: auto;
+  max-width: 100%;
+}
+
+.doc-block table.doc-table--layout td,
+.doc-block table.doc-table--layout th,
+.doc-flow-block table.doc-table--layout td,
+.doc-flow-block table.doc-table--layout th {
+  border: 0;
+  padding: 2px 4px;
+  vertical-align: top;
+}
+
+.doc-block strong,
+.doc-flow-block strong {
+  font-weight: 700;
+}
+
+.doc-block .ql-align-center,
+.doc-flow-block .ql-align-center {
+  text-align: center;
+}
+
+.doc-block .ql-align-right,
+.doc-flow-block .ql-align-right {
+  text-align: right;
+}
+
+.doc-block .ql-align-justify,
+.doc-flow-block .ql-align-justify {
+  text-align: justify;
+}
+
+@media print {
+  .document-page {
+    padding: 0;
+    background: transparent;
+  }
+
+  .document-page-frame {
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .doc-block,
+  .doc-flow-block {
+    break-inside: avoid-page;
+  }
+}

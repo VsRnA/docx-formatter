@@ -1,0 +1,26 @@
+.document-processing-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 128px);
+  padding: 48px 24px;
+}
+
+.document-processing-screen__panel {
+  width: 100%;
+  max-width: 640px;
+}
+
+.document-processing-screen__steps {
+  margin: 24px 0;
+}
+
+.document-processing-screen__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.document-processing-screen__spinner .ant-spin-dot-item {
+  background-color: #f26522;
+}

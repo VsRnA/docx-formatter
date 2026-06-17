@@ -1,0 +1,82 @@
+# =============================================================================
+# Secrets & local environment
+# =============================================================================
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# =============================================================================
+# Dependencies
+# =============================================================================
+node_modules/
+vendor/
+
+# =============================================================================
+# Laravel (backend)
+# =============================================================================
+/backend/bootstrap/cache/*
+!/backend/bootstrap/cache/.gitkeep
+
+/backend/storage/logs/*
+!/backend/storage/logs/.gitkeep
+
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+/backend/storage/framework/testing/*
+
+# Runtime uploads & generated files (mock S3, temp DOCX, extracted images)
+/backend/storage/app/*
+!/backend/storage/app/mock-cloud/
+/backend/storage/app/mock-cloud/*
+!/backend/storage/app/mock-cloud/.gitkeep
+
+# PHPUnit
+.phpunit.result.cache
+.phpunit.cache
+/backend/.phpunit.result.cache
+/backend/.phpunit.cache
+
+# =============================================================================
+# Frontend (Vite + TypeScript)
+# =============================================================================
+/frontend/dist/
+/frontend/*.tsbuildinfo
+/frontend/coverage/
+/frontend/.eslintcache
+
+# =============================================================================
+# Logs & process output
+# =============================================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =============================================================================
+# OS & editors
+# =============================================================================
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# =============================================================================
+# User documents (runtime data, not source code)
+# =============================================================================
+*.docx
+!backend/tests/fixtures/**/*.docx
+
+# =============================================================================
+# Docker (local overrides only; docker-compose.yml stays tracked)
+# =============================================================================
+docker-compose.override.yml
+docker-compose.*.local.yml
