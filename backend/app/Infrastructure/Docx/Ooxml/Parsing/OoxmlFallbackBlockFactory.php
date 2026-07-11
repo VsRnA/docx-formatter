@@ -4,8 +4,8 @@ namespace App\Infrastructure\Docx\Ooxml\Parsing;
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\ValueObject\BlockType;
-use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Domain\Docx\ValueObject\ParseContext;
+use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Support\Constants\HtmlCssClasses;
 use DOMElement;
 

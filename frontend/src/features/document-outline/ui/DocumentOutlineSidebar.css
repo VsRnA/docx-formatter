@@ -1,0 +1,39 @@
+.document-outline-sidebar__title {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.document-outline-sidebar__empty {
+  display: block;
+  font-size: 12px;
+}
+
+.document-outline-sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.document-outline-sidebar__item button {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #333;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.document-outline-sidebar__item button:hover {
+  background: #fff5ef;
+  color: #f26522;
+}
+
+.document-outline-sidebar__item--h3 button {
+  padding-left: 18px;
+}

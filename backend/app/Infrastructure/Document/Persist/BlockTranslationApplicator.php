@@ -3,24 +3,24 @@
 namespace App\Infrastructure\Document\Persist;
 
 use App\Domain\Docx\Entity\ParsedBlock;
-use App\Domain\Docx\Port\TranslatorPort;
 use App\Enums\BlockType;
 use App\Enums\TranslationStatus;
-use App\Models\Document;
 use App\Infrastructure\Document\Translation\SegmentTranslationCoordinator;
 use App\Infrastructure\Document\Translation\TranslatedHtmlPatcher;
+use App\Infrastructure\Document\Translation\TranslationCacheStore;
+use App\Models\Document;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class BlockTranslationApplicator
 {
     public function __construct(
-        private readonly TranslatorPort $translator,
         private readonly SegmentTranslationCoordinator $segments,
         private readonly TranslatedHtmlPatcher $htmlPatcher,
     ) {}
 
     /**
+     * @param  array<string, string>  $translationsByText
      * @return array{
      *     html: ?string,
      *     text_translated: ?string,
@@ -28,27 +28,32 @@ class BlockTranslationApplicator
      *     meta?: array<string, mixed>
      * }
      */
-    public function apply(Document $document, ParsedBlock $block, ?string $html, bool $translate): array
-    {
+    public function apply(
+        Document $document,
+        ParsedBlock $block,
+        ?string $html,
+        bool $translate,
+        array $translationsByText = [],
+    ): array {
         if (! $translate) {
             return $this->skipped($html);
         }
 
         $tableCells = $block->meta['ooxml_table_cells'] ?? null;
         if (is_array($tableCells) && $tableCells !== []) {
-            return $this->applyTableSegments($document, $block, $html, $tableCells);
+            return $this->applyTableSegments($document, $block, $html, $tableCells, $translationsByText);
         }
 
         $segmentList = $block->meta['ooxml_segments'] ?? null;
         if (is_array($segmentList) && $segmentList !== []) {
-            return $this->applyParagraphSegments($document, $html, $segmentList);
+            return $this->applyParagraphSegments($document, $html, $segmentList, $translationsByText);
         }
 
         if (! $block->textOriginal) {
             return $this->skipped($html);
         }
 
-        return $this->applyLegacy($document, $block, $html);
+        return $this->applyLegacy($document, $block, $html, $translationsByText);
     }
 
     public function applyTranslationToHtml(string $html, string $text, BlockType $type): string
@@ -58,12 +63,17 @@ class BlockTranslationApplicator
 
     /**
      * @param  list<array{id: int, text: string, translatable?: bool}>  $segments
+     * @param  array<string, string>  $translationsByText
      * @return array{html: ?string, text_translated: ?string, translation_status: TranslationStatus, meta: array<string, mixed>}
      */
-    private function applyParagraphSegments(Document $document, ?string $html, array $segments): array
-    {
+    private function applyParagraphSegments(
+        Document $document,
+        ?string $html,
+        array $segments,
+        array $translationsByText,
+    ): array {
         try {
-            [$translations, $translatedParts] = $this->segments->translate($document, $segments);
+            [$translations, $translatedParts] = $this->segments->translateFromPrecomputed($segments, $translationsByText);
 
             return [
                 'html' => $this->segments->applyToHtml($html ?? '', $segments, $translations, BlockType::Paragraph),
@@ -87,10 +97,16 @@ class BlockTranslationApplicator
 
     /**
      * @param  list<array{cell_index: int, segments: list<array{id: int, text: string, translatable?: bool}>}>  $tableCells
+     * @param  array<string, string>  $translationsByText
      * @return array{html: ?string, text_translated: ?string, translation_status: TranslationStatus, meta?: array<string, mixed>}
      */
-    private function applyTableSegments(Document $document, ParsedBlock $block, ?string $html, array $tableCells): array
-    {
+    private function applyTableSegments(
+        Document $document,
+        ParsedBlock $block,
+        ?string $html,
+        array $tableCells,
+        array $translationsByText,
+    ): array {
         $allSegments = [];
         foreach ($tableCells as $cell) {
             foreach ($cell['segments'] ?? [] as $segment) {
@@ -103,7 +119,7 @@ class BlockTranslationApplicator
         }
 
         try {
-            [$translations, $translatedParts] = $this->segments->translate($document, $allSegments);
+            [$translations, $translatedParts] = $this->segments->translateFromPrecomputed($allSegments, $translationsByText);
 
             return [
                 'html' => $this->segments->applyToHtml($html ?? '', $allSegments, $translations, BlockType::Table),
@@ -126,16 +142,21 @@ class BlockTranslationApplicator
     }
 
     /**
+     * @param  array<string, string>  $translationsByText
      * @return array{html: ?string, text_translated: ?string, translation_status: TranslationStatus}
      */
-    private function applyLegacy(Document $document, ParsedBlock $block, ?string $html): array
-    {
+    private function applyLegacy(
+        Document $document,
+        ParsedBlock $block,
+        ?string $html,
+        array $translationsByText,
+    ): array {
         try {
-            $translated = $this->translator->translate(
-                (string) $block->textOriginal,
-                $document->language_from,
-                $document->language_to,
-            );
+            $key = TranslationCacheStore::normalizeTextKey((string) $block->textOriginal);
+            $translated = trim((string) ($translationsByText[$key] ?? ''));
+            if ($translated === '') {
+                $translated = (string) $block->textOriginal;
+            }
 
             if ($translated && $block->type->value !== BlockType::Image->value && ! $this->htmlPatcher->shouldPreserveLayout($html ?? '')) {
                 $html = $this->htmlPatcher->apply($html ?? '', $translated, BlockType::from($block->type->value));

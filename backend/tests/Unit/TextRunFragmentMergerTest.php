@@ -21,7 +21,8 @@ class TextRunFragmentMergerTest extends TestCase
 
         $suffix = $merger->nonOverlappingSuffix('E-mail: user', 'user@example.com');
 
-        $this->assertSame('@example.com', $suffix);
+        // Overlap shorter than 8 chars is ignored to avoid trimming legitimate runs.
+        $this->assertSame('user@example.com', $suffix);
     }
 
     public function test_detects_doubled_caption_text(): void

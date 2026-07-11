@@ -4,13 +4,13 @@ namespace App\Infrastructure\Docx\Ooxml\Parsing;
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\ValueObject\BlockType;
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Infrastructure\Docx\Ooxml\Parsing\Layout\ParagraphLayoutHelper;
 use App\Infrastructure\Docx\Ooxml\Parsing\Paragraph\ParagraphBlockSplitter;
 use App\Infrastructure\Docx\Ooxml\Styles\OoxmlNumberingResolver;
 use App\Infrastructure\Docx\Ooxml\Styles\OoxmlStyleResolver;
-use App\Domain\Docx\ValueObject\ParseContext;
 use DOMElement;
 
 final class OoxmlParagraphParser
@@ -20,7 +20,6 @@ final class OoxmlParagraphParser
         private readonly OoxmlNumberingResolver $numbering,
         private readonly OoxmlRunParser $runs,
         private readonly OoxmlImageBlockFactory $images,
-        private readonly OoxmlAnchorLayoutParser $anchors,
         private readonly ParagraphBlockSplitter $blockSplitter,
         private readonly ParagraphLayoutHelper $layout,
     ) {}
@@ -54,10 +53,7 @@ final class OoxmlParagraphParser
         $parsed = $this->runs->parseContainer($paragraph, $styleId, $package, $pendingImages, $context);
         $plain = $parsed['plain'];
         $innerHtml = $parsed['html'];
-        $galleryHtml = $this->layout->buildFigureGalleryHtml($innerHtml, $pendingImages, $paragraph, $package);
-        if ($galleryHtml !== null) {
-            $innerHtml = $galleryHtml;
-        }
+        $innerHtml = $this->layout->applyFlowingImageLayout($innerHtml, $pendingImages, $plain);
 
         if ($plain === '' && $pendingImages === [] && trim(strip_tags($innerHtml)) === '') {
             return [];
@@ -66,7 +62,7 @@ final class OoxmlParagraphParser
         if ($this->layout->shouldCreateStandaloneImageBlock($plain, $pendingImages, $innerHtml)) {
             $pending = $pendingImages[0];
             $attributes = is_array($pending['attributes'] ?? null) ? $pending['attributes'] : [];
-            unset($attributes['inline']);
+            $attributes = $this->layout->normalizeAttributesForFlow($attributes);
 
             return [
                 new ParsedBlock(
@@ -110,8 +106,6 @@ final class OoxmlParagraphParser
         }
         if ($classNames !== []) {
             $attrs[] = 'class="'.implode(' ', $classNames).'"';
-        } elseif (str_contains($innerHtml, 'doc-symbol-row')) {
-            $attrs[] = 'class="doc-paragraph--symbols"';
         }
 
         $stylesJson = $parsed['inline'] !== [] ? ['inline' => $parsed['inline']] : null;
@@ -137,7 +131,7 @@ final class OoxmlParagraphParser
             $pendingImages,
             $pageBreakBefore,
             $ooxmlScopeIndex,
-            fn (string $html, array $images): string => $this->wrapAnchoredCanvas($html, $images),
+            static fn (string $html, array $images): string => $html,
             fn (string $html, array $images): array => $this->pendingImagesInHtml($html, $images),
         );
     }
@@ -159,34 +153,5 @@ final class OoxmlParagraphParser
                 return str_contains($html, 'data-pending-marker="'.$marker.'"');
             },
         ));
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $pendingImages
-     */
-    private function wrapAnchoredCanvas(string $innerHtml, array $pendingImages): string
-    {
-        if (str_contains($innerHtml, 'doc-figure-canvas')) {
-            return $innerHtml;
-        }
-
-        if (str_contains($innerHtml, 'doc-figure-gallery--positioned')) {
-            return $innerHtml;
-        }
-
-        $needsCanvas = str_contains($innerHtml, 'doc-image--anchored')
-            || str_contains($innerHtml, 'doc-textbox--anchored')
-            || str_contains($innerHtml, 'doc-anchor-shape');
-
-        if (! $needsCanvas && $this->anchors->minCanvasHeightPx($innerHtml, $pendingImages) === 0) {
-            return $innerHtml;
-        }
-
-        $minHeight = $this->anchors->minCanvasHeightPx($innerHtml, $pendingImages);
-
-        return '<div class="doc-anchored-canvas"'.OoxmlCss::styleAttribute([
-            'position:relative',
-            $minHeight > 0 ? 'min-height:'.$minHeight.'px' : null,
-        ]).'>'.$innerHtml.'</div>';
     }
 }

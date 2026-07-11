@@ -3,11 +3,11 @@
 namespace App\Infrastructure\Docx\Ooxml\Parsing;
 
 use App\Domain\Docx\Entity\ParsedBlock;
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlNamespaces;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlMathRenderer;
-use App\Domain\Docx\ValueObject\ParseContext;
 use App\Support\Constants\OoxmlTags;
 use DOMDocument;
 use DOMElement;

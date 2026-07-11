@@ -6,8 +6,8 @@ use App\Domain\Document\Port\HtmlBuilderPort;
 use App\Domain\Document\Port\HtmlSanitizerPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\DocumentId;
-use App\Models\DocumentBlock as DocumentBlockModel;
 use App\Infrastructure\Document\EditorHtmlNormalizer;
+use App\Models\DocumentBlock as DocumentBlockModel;
 
 final class UpdateBlockHandler
 {

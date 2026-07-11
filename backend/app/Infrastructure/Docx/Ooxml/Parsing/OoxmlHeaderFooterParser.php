@@ -4,7 +4,6 @@ namespace App\Infrastructure\Docx\Ooxml\Parsing;
 
 use App\Infrastructure\Docx\Ooxml\OoxmlNamespaces;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
-use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use DOMDocument;
 use DOMElement;
 

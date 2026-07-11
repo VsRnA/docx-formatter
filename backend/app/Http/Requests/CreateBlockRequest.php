@@ -23,6 +23,9 @@ class CreateBlockRequest extends FormRequest
             'sort' => ['sometimes', 'integer', 'min:0'],
             'html' => ['sometimes', 'string'],
             'text_original' => ['sometimes', 'nullable', 'string'],
+            'styles_json' => ['sometimes', 'nullable', 'array'],
+            'meta_json' => ['sometimes', 'nullable', 'array'],
+            'assets_json' => ['sometimes', 'nullable', 'array'],
         ];
     }
 }

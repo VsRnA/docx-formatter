@@ -2,6 +2,9 @@
 
 namespace App\Infrastructure\Docx\Ooxml\Parsing;
 
+use App\Domain\Docx\Service\Support\TextRunFragmentMerger;
+use App\Domain\Docx\ValueObject\ParseContext;
+use App\Infrastructure\Document\BlockHtmlWrapper;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Infrastructure\Docx\Ooxml\Parsing\Layout\SymbolRowLayout;
@@ -9,9 +12,6 @@ use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlAlternateContentRenderer;
 use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlMathRenderer;
 use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlRunFragmentAccumulator;
 use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlRunTextFormatter;
-use App\Infrastructure\Document\BlockHtmlWrapper;
-use App\Domain\Docx\Service\Support\TextRunFragmentMerger;
-use App\Domain\Docx\ValueObject\ParseContext;
 use App\Support\Constants\OoxmlTags;
 use DOMElement;
 
@@ -130,7 +130,7 @@ final class OoxmlRunParser
         }
     }
 
-  /**
+    /**
      * @param  list<array{marker: string, relationship_id: string, local_path: ?string, attributes: array<string, mixed>}>|null  $pendingImages
      * @return array{html: string, plain: string, inline: array<string, mixed>, run: DOMElement}
      */

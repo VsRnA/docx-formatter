@@ -1,0 +1,29 @@
+:80 {
+	basic_auth {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+
+	handle /api/* {
+		reverse_proxy backend:80
+	}
+
+	handle /up {
+		reverse_proxy backend:80
+	}
+
+	handle /horizon* {
+		reverse_proxy backend:80
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+
+:3001 {
+	basic_auth {
+		{$GRAFANA_BASIC_AUTH_USER} {$GRAFANA_BASIC_AUTH_HASH}
+	}
+
+	reverse_proxy grafana:3000
+}

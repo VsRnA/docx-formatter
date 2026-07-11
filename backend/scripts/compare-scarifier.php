@@ -1,16 +1,20 @@
 <?php
 
+use App\Infrastructure\Docx\Ooxml\OoxmlNativeDocxParser;
+use App\Models\DocumentBlock;
+use Illuminate\Contracts\Console\Kernel;
+
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 $docId = '7161652f-04a2-48ce-8bfe-7fb619ca7270';
 $sourcePath = '/tmp/scarifier-source.docx';
 
-$parser = app(App\Infrastructure\Docx\Ooxml\OoxmlNativeDocxParser::class);
+$parser = app(OoxmlNativeDocxParser::class);
 $source = $parser->parse($sourcePath);
 
-$dbBlocks = App\Models\DocumentBlock::where('document_id', $docId)->orderBy('sort')->get();
+$dbBlocks = DocumentBlock::where('document_id', $docId)->orderBy('sort')->get();
 
 echo 'SOURCE blocks: '.count($source->blocks).PHP_EOL;
 echo 'DB blocks: '.$dbBlocks->count().PHP_EOL.PHP_EOL;

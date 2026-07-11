@@ -3,15 +3,14 @@
 namespace App\Infrastructure\Docx\Ooxml;
 
 use App\Enums\BlockType;
-use App\Models\Document;
-use App\Models\DocumentBlock;
 use App\Infrastructure\Docx\Ooxml\Writing\OoxmlPackageWriter;
 use App\Infrastructure\Docx\Ooxml\Writing\OoxmlTextReplacer;
 use App\Infrastructure\Docx\Ooxml\Writing\OoxmlTextScopeWalker;
-use App\Infrastructure\Docx\Ooxml\OoxmlXml;
+use App\Models\Document;
+use App\Models\DocumentBlock;
 use DOMElement;
 
-final class OoxmlDocxWriter 
+final class OoxmlDocxWriter
 {
     public function __construct(
         private readonly OoxmlTextScopeWalker $scopeWalker,

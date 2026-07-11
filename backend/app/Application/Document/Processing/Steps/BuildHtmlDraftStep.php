@@ -3,8 +3,8 @@
 namespace App\Application\Document\Processing\Steps;
 
 use App\Domain\Document\Entity\Document;
-use App\Domain\Document\Port\HtmlBuilderPort;
 use App\Domain\Document\Port\DocumentPipelineStepPort;
+use App\Domain\Document\Port\HtmlBuilderPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\ProcessingStage;
 

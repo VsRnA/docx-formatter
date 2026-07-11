@@ -4,7 +4,6 @@ namespace App\Infrastructure\Docx\Ooxml;
 
 use DOMDocument;
 use DOMElement;
-use DOMNode;
 use DOMXPath;
 
 final class OoxmlXml

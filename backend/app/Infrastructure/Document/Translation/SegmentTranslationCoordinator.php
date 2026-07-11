@@ -2,28 +2,26 @@
 
 namespace App\Infrastructure\Document\Translation;
 
-use App\Domain\Docx\Port\TranslatorPort;
 use App\Enums\BlockType;
 use App\Infrastructure\Document\BlockHtmlWrapper;
-use App\Models\Document;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
 
 final class SegmentTranslationCoordinator
 {
     public function __construct(
-        private readonly TranslatorPort $translator,
         private readonly OoxmlHtmlSegmentAnnotator $segmentHtml,
         private readonly TranslatedHtmlPatcher $htmlPatcher,
     ) {}
 
     /**
      * @param  list<array{id: int, text: string, translatable?: bool}>  $segments
+     * @param  array<string, string>  $translationsByText
      * @return array{0: array<int, string>, 1: list<string>}
      */
-    public function translate(Document $document, array $segments): array
+    public function translateFromPrecomputed(array $segments, array $translationsByText): array
     {
-        $segmentIds = [];
-        $sourceTexts = [];
+        $translations = [];
+        $translatedParts = [];
 
         foreach ($segments as $segment) {
             if (! ($segment['translatable'] ?? true)) {
@@ -35,26 +33,11 @@ final class SegmentTranslationCoordinator
                 continue;
             }
 
-            $segmentIds[] = (int) $segment['id'];
-            $sourceTexts[] = $text;
-        }
-
-        if ($sourceTexts === []) {
-            return [[], []];
-        }
-
-        $translatedTexts = $this->translator->translateMany(
-            $sourceTexts,
-            $document->language_from,
-            $document->language_to,
-        );
-
-        $translations = [];
-        $translatedParts = [];
-        foreach ($segmentIds as $position => $segmentId) {
-            $translated = trim((string) ($translatedTexts[$position] ?? ''));
+            $segmentId = (int) ($segment['id'] ?? -1);
+            $key = TranslationCacheStore::normalizeTextKey($text);
+            $translated = trim((string) ($translationsByText[$key] ?? ''));
             if ($translated === '') {
-                $translated = $sourceTexts[$position];
+                $translated = $text;
             }
 
             $translations[$segmentId] = $translated;

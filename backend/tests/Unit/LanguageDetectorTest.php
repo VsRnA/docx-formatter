@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Services\Ai\Support\LanguageDetector;
+use App\Infrastructure\External\Ai\Support\LanguageDetector;
 use PHPUnit\Framework\TestCase;
 
 class LanguageDetectorTest extends TestCase

@@ -1,0 +1,55 @@
+.document-table-gutters {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.document-table-gutters__row-gutter,
+.document-table-gutters__col-gutter {
+  position: absolute;
+  display: flex;
+  pointer-events: none;
+}
+
+.document-table-gutters__row-gutter {
+  left: -18px;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  flex-direction: column;
+  justify-content: stretch;
+}
+
+.document-table-gutters__col-gutter {
+  top: -18px;
+  left: 0;
+  right: 0;
+  height: 14px;
+}
+
+.document-table-gutters__button {
+  pointer-events: auto;
+  border: 1px solid #d9d9d9;
+  background: #fafafa;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.document-table-gutters__button:hover {
+  background: rgba(242, 101, 34, 0.15);
+  border-color: rgba(242, 101, 34, 0.45);
+}
+
+.document-table-gutters__button--row {
+  flex: 1;
+  min-height: 18px;
+  margin-bottom: 2px;
+}
+
+.document-table-gutters__button--col {
+  flex: 1;
+  min-width: 24px;
+  margin-right: 2px;
+}

@@ -3,7 +3,6 @@
 namespace App\Infrastructure\Document;
 
 use App\Infrastructure\Docx\Ooxml\OoxmlNamespaces;
-use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use DOMElement;
 use ZipArchive;

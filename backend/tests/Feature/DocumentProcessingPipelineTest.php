@@ -2,12 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Application\Document\Processing\DocumentProcessingPipeline;
 use App\Domain\Shared\Port\FileStoragePort;
 use App\Enums\BlockType;
 use App\Enums\DocumentStatus;
 use App\Models\Document;
-use App\Domain\Document\Query\DocumentListQueryPort;
-use App\Application\Document\Processing\DocumentProcessingPipeline;
 use App\Support\Constants\ProcessingStages;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

@@ -2,7 +2,6 @@
 
 namespace App\Application\Document\Processing;
 
-use App\Domain\Document\Entity\Document;
 use App\Domain\Document\Port\DocumentPipelineStepPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\DocumentId;

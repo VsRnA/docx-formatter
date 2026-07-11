@@ -80,3 +80,5 @@ Thumbs.db
 # =============================================================================
 docker-compose.override.yml
 docker-compose.*.local.yml
+supervisord.pid
+backend/supervisord.pid

@@ -46,8 +46,22 @@ body {
   .ant-layout-header,
   .document-editor-layout__header,
   .document-format-toolbar,
-  .document-preview-toolbar {
+  .document-preview-toolbar,
+  .document-editor-layout__ribbon,
+  .document-editor-layout__sidebar {
     display: none !important;
+  }
+
+  .app-shell--compact,
+  .app-shell__content--compact,
+  .document-editor-layout--flow,
+  .document-editor-layout__scroll,
+  .document-editor-layout__split,
+  .document-editor-layout__editor-pane {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
   }
 
   .document-root {

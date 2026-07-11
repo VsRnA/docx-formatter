@@ -3,12 +3,12 @@
 namespace App\Application\Document\Processing\Steps;
 
 use App\Application\Document\Processing\DocumentProcessingState;
-use App\Infrastructure\Docx\Ooxml\OoxmlDocxWriter;
 use App\Domain\Document\Entity\Document;
 use App\Domain\Document\Port\DocumentPipelineStepPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\ProcessingStage;
 use App\Domain\Shared\Port\FileStoragePort;
+use App\Infrastructure\Docx\Ooxml\OoxmlDocxWriter;
 use App\Models\Document as DocumentModel;
 use App\Support\TempFileManager;
 use RuntimeException;

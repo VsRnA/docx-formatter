@@ -2,9 +2,9 @@
 
 namespace App\Infrastructure\Persistence\Eloquent\Query;
 
-use App\Application\Document\Query\GetDocumentEditor\DocumentEditorReadModel;
 use App\Domain\Document\Exception\DocumentNotFound;
 use App\Domain\Document\Query\DocumentEditorQueryPort;
+use App\Domain\Document\Query\DocumentEditorReadModel;
 use App\Domain\Document\ValueObject\DocumentId;
 use App\Models\Document as DocumentModel;
 

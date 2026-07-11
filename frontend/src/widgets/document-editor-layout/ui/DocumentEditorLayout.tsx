@@ -12,6 +12,8 @@ interface Props {
   status?: ReactNode;
   toolbar: ReactNode;
   formatBar?: ReactNode;
+  leftSidebar?: ReactNode;
+  rightSidebar?: ReactNode;
   document: ReactNode;
 }
 
@@ -21,6 +23,8 @@ export function DocumentEditorLayout({
   status,
   toolbar,
   formatBar,
+  leftSidebar,
+  rightSidebar,
   document,
 }: Props) {
   return (
@@ -42,7 +46,17 @@ export function DocumentEditorLayout({
       {formatBar ? <div className="document-editor-layout__ribbon">{formatBar}</div> : null}
       <Content className="document-editor-layout__scroll document-editor-layout__content--flow">
         <div className="document-editor-layout__split">
+          {leftSidebar ? (
+            <aside className="document-editor-layout__sidebar document-editor-layout__sidebar--left">
+              {leftSidebar}
+            </aside>
+          ) : null}
           <div className="document-editor-layout__editor-pane">{document}</div>
+          {rightSidebar ? (
+            <aside className="document-editor-layout__sidebar document-editor-layout__sidebar--right">
+              {rightSidebar}
+            </aside>
+          ) : null}
         </div>
       </Content>
     </Layout>

@@ -4,7 +4,6 @@ namespace App\Domain\Docx\Service;
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\Service\Support\TextRunFragmentMerger;
-use App\Domain\Docx\ValueObject\BlockType;
 
 final class ConsecutiveBlocksDeduplicator
 {

@@ -4,7 +4,6 @@
  * Cross-cutting constants (autoloaded via composer).
  * Domain-specific constants live in App\Support\Constants\*.
  */
-
 const DOCX_EXTENSION = 'docx';
 
 const PARSE_COVERAGE_THRESHOLD = 0.98;

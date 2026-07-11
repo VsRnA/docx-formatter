@@ -3,6 +3,7 @@
 namespace App\Application\Document\Query\GetDocumentEditor;
 
 use App\Domain\Document\Query\DocumentEditorQueryPort;
+use App\Domain\Document\Query\DocumentEditorReadModel;
 use App\Domain\Document\ValueObject\DocumentId;
 use App\Domain\Shared\Port\FileStoragePort;
 

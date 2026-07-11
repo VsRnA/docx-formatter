@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\Service\ConsecutiveBlocksDeduplicator;
-use App\Domain\Docx\ValueObject\BlockType;
 use App\Domain\Docx\Service\Support\TextRunFragmentMerger;
+use App\Domain\Docx\ValueObject\BlockType;
 use PHPUnit\Framework\TestCase;
 
 class ConsecutiveBlocksDeduplicatorTest extends TestCase

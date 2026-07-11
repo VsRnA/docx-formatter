@@ -2,12 +2,12 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Space, Spin } from 'antd';
 import { documentApi } from '@/entities/document';
-import { mergeBlocksToEditorHtml } from '@/features/edit-document-flow/lib/blockEditorHtml';
+import { mergeBlocksToEditorHtml } from '@/features/edit-document-flow';
 import { PrintDocumentButton } from '@/features/print-document';
 import { AppShell } from '@/shared/ui/AppShell';
 import { DocumentPageView } from '@/shared/ui/DocumentPageView';
 import { ROUTES } from '@/shared/config/env';
-import { sortBlocks } from '@/shared/lib/sortBlocks';
+import { sortBlocks } from '@/entities/block';
 import './DocumentPreviewPage.css';
 
 export function DocumentPreviewPage() {
@@ -41,6 +41,9 @@ export function DocumentPreviewPage() {
     <AppShell compact>
       <div className="document-preview-toolbar">
         <Space>
+          <Link to={ROUTES.home}>
+            <Button size="small">К списку</Button>
+          </Link>
           <Link to={ROUTES.documentEdit(id)}>
             <Button size="small">Редактировать</Button>
           </Link>

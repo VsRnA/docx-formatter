@@ -2,7 +2,6 @@
 
 namespace App\Infrastructure\Docx\Ooxml\Writing;
 
-use App\Infrastructure\Docx\Ooxml\OoxmlNamespaces;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use DOMElement;
 

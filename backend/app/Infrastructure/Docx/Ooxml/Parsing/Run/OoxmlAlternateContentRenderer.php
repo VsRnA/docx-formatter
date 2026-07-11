@@ -2,12 +2,12 @@
 
 namespace App\Infrastructure\Docx\Ooxml\Parsing\Run;
 
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Infrastructure\Docx\Ooxml\Parsing\Layout\SymbolRowLayout;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlCss;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlImageBlockFactory;
-use App\Domain\Docx\ValueObject\ParseContext;
 use DOMElement;
 
 final class OoxmlAlternateContentRenderer

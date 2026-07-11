@@ -23,17 +23,6 @@ export interface SaveDraftBlockPayload {
   assets?: Record<string, unknown> | null;
 }
 
-export interface PublicDocumentPayload {
-  title: string;
-  html: string;
-}
-
-export const publicDocumentApi = {
-  get(slug: string) {
-    return apiClient.get<{ data: PublicDocumentPayload }>(`/public/documents/${slug}`);
-  },
-};
-
 export const documentApi = {
   list(page = 1) {
     return apiClient.get<DocumentListResponse>('/documents', { params: { page } });
@@ -63,16 +52,19 @@ export const documentApi = {
     });
   },
 
-  saveDraft(id: string, blocks: SaveDraftBlockPayload[]) {
-    return apiClient.put<{ data: Document }>(`/documents/${id}`, { blocks });
-  },
-
-  publish(id: string) {
-    return apiClient.post<{ data: Document }>(`/documents/${id}/publish`);
+  saveDraft(id: string, blocks: SaveDraftBlockPayload[], createAutosaveCheckpoint = false) {
+    return apiClient.put<{ data: Document }>(`/documents/${id}`, {
+      blocks,
+      create_autosave_checkpoint: createAutosaveCheckpoint,
+    });
   },
 
   reprocess(id: string) {
     return apiClient.post<{ data: Document }>(`/documents/${id}/reprocess`);
+  },
+
+  remove(id: string) {
+    return apiClient.delete(`/documents/${id}`);
   },
 
   exportHtmlUrl(id: string) {

@@ -6,8 +6,11 @@ return [
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://localhost'),
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
-    'max_upload_mb' => (int) env('MAX_UPLOAD_MB', 50),
-    'require_auth' => (bool) env('REQUIRE_AUTH', false),
+    'max_upload_mb' => (int) env('MAX_UPLOAD_MB', 150),
+    // Skip base64 inlining for larger images when preparing published/export HTML.
+    'published_inline_image_max_mb' => (int) env('PUBLISHED_INLINE_IMAGE_MAX_MB', 2),
+    // Total raw image bytes to inline per HTML prepare call (rest keep URLs).
+    'published_inline_image_total_budget_mb' => (int) env('PUBLISHED_INLINE_IMAGE_TOTAL_BUDGET_MB', 32),
     'timezone' => 'UTC',
     'locale' => 'ru',
     'fallback_locale' => 'en',

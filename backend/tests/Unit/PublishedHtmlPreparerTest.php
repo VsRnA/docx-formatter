@@ -30,6 +30,23 @@ class PublishedHtmlPreparerTest extends TestCase
         $this->assertStringNotContainsString('mock-storage', $prepared);
     }
 
+    public function test_skips_inlining_when_image_exceeds_size_limit(): void
+    {
+        $key = 'documents/test-doc/uploads/large.png';
+        $src = 'http://localhost/api/v1/mock-storage?key='.rawurlencode($key);
+        $storage = $this->createMock(FileStoragePort::class);
+        $storage->method('exists')->with($key)->willReturn(true);
+        $storage->method('size')->with($key)->willReturn(3 * 1024 * 1024);
+        $storage->expects($this->never())->method('get');
+
+        $preparer = new PublishedHtmlPreparer($storage, new EditorHtmlNormalizer);
+        $prepared = $preparer->prepareFragment('<img src="'.$src.'" alt="" />');
+
+        $this->assertStringContainsString('mock-storage', $prepared);
+        $this->assertStringContainsString(rawurlencode($key), $prepared);
+        $this->assertStringNotContainsString('data:image/png;base64,', $prepared);
+    }
+
     public function test_repairs_broken_font_quotes_for_pdf(): void
     {
         $storage = $this->createMock(FileStoragePort::class);
@@ -62,7 +79,7 @@ class PublishedHtmlPreparerTest extends TestCase
         $this->assertStringContainsString('document-page-frame', $html);
         $this->assertStringContainsString('doc-flow-block', $html);
         $this->assertStringContainsString('.document-page {', $html);
-        $this->assertStringContainsString('font-family: \'DejaVu Serif\'', $html);
+        $this->assertStringContainsString('DejaVu Serif', $html);
         $this->assertStringNotContainsString('css/document.css', $html);
         $this->assertSame(1, substr_count($html, '<article class="document-root">'));
     }

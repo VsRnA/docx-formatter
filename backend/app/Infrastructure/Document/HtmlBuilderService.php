@@ -2,12 +2,10 @@
 
 namespace App\Infrastructure\Document;
 
-use App\Domain\Document\Port\HtmlBuilderPort;
 use App\Domain\Document\Port\HtmlRendererPort;
 use App\Models\Document;
-use App\Models\DocumentBlock;
 
-class HtmlBuilderService 
+class HtmlBuilderService
 {
     public function __construct(
         private readonly HtmlRendererPort $renderer,

@@ -2,10 +2,12 @@
 
 return [
     'integrations' => [
-        /** Local disk instead of Yandex Object Storage */
+        /** Local disk instead of S3-compatible object storage */
         'mock_storage' => filter_var(env('MOCK_STORAGE', env('MOCK_YANDEX', false)), FILTER_VALIDATE_BOOLEAN),
         /** Passthrough translator instead of Yandex AI Studio */
         'mock_translation' => filter_var(env('MOCK_TRANSLATION', env('MOCK_YANDEX', false)), FILTER_VALIDATE_BOOLEAN),
+        /** Passthrough block normalizer instead of Yandex AI Studio */
+        'mock_normalizer' => filter_var(env('MOCK_NORMALIZER', env('MOCK_TRANSLATION', env('MOCK_YANDEX', false))), FILTER_VALIDATE_BOOLEAN),
     ],
 
     'mock' => [
@@ -24,6 +26,11 @@ return [
     'translation' => [
         /** Optional terminology map (JSON object: {"source term":"target term"}). */
         'glossary' => json_decode((string) env('TRANSLATION_GLOSSARY', '{}'), true) ?: [],
+        'batch_size' => (int) env('TRANSLATE_BATCH_SIZE', 30),
+        'batch_char_budget' => (int) env('TRANSLATE_BATCH_CHAR_BUDGET', 6000),
+        'concurrency' => (int) env('TRANSLATE_CONCURRENCY', 1),
+        'cache_enabled' => filter_var(env('TRANSLATE_CACHE_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'cache_ttl_days' => (int) env('TRANSLATE_CACHE_TTL_DAYS', 30),
     ],
 
     'docx' => [

@@ -35,8 +35,7 @@ final class HtmlRenderer implements HtmlRendererPort
 
         return match ($ir['kind']) {
             'ooxml_fallback' => $this->fallback->render($block, $ir),
-            'paragraph', 'heading', 'list', 'caption', 'link_block', 'image_text'
-                => $this->textBlocks->render($block, $ir),
+            'paragraph', 'heading', 'list', 'caption', 'link_block', 'image_text' => $this->textBlocks->render($block, $ir),
             default => null,
         };
     }

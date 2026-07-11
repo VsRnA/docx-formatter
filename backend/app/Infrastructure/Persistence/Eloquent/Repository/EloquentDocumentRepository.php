@@ -10,6 +10,7 @@ use App\Infrastructure\Persistence\Eloquent\Mapper\BlockMapper;
 use App\Infrastructure\Persistence\Eloquent\Mapper\DocumentMapper;
 use App\Models\Document as DocumentModel;
 use App\Models\DocumentBlock as DocumentBlockModel;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentDocumentRepository implements DocumentRepositoryInterface
 {
@@ -38,24 +39,58 @@ final class EloquentDocumentRepository implements DocumentRepositoryInterface
 
     public function save(Document $document): void
     {
-        $model = DocumentModel::query()->find($document->id()->value);
-        if ($model === null) {
-            throw DocumentNotFound::withId($document->id());
-        }
+        DB::transaction(function () use ($document): void {
+            $documentId = $document->id()->value;
 
-        $model->update($this->documents->toModelAttributes($document));
+            $model = DocumentModel::query()->find($documentId);
+            if ($model === null) {
+                throw DocumentNotFound::withId($document->id());
+            }
 
-        $domainBlocks = $document->blocks();
-        if ($domainBlocks !== []) {
-            DocumentBlockModel::query()
-                ->where('document_id', $document->id()->value)
-                ->delete();
+            $model->update($this->documents->toModelAttributes($document));
 
+            $domainBlocks = $document->blocks();
+            $existingIds = DocumentBlockModel::query()
+                ->where('document_id', $documentId)
+                ->pluck('id')
+                ->all();
+
+            if ($domainBlocks === []) {
+                if ($existingIds !== []) {
+                    DocumentBlockModel::query()
+                        ->where('document_id', $documentId)
+                        ->delete();
+                }
+
+                return;
+            }
+
+            $incomingIds = [];
             foreach ($domainBlocks as $block) {
-                DocumentBlockModel::query()->create(
-                    $this->blocks->toModelAttributes($block, $document->id()->value),
+                $incomingIds[] = $block->id;
+                $attributes = $this->blocks->toModelAttributes($block, $documentId);
+
+                DocumentBlockModel::query()->updateOrCreate(
+                    ['id' => $block->id],
+                    $attributes,
                 );
             }
+
+            $idsToDelete = array_diff($existingIds, $incomingIds);
+            if ($idsToDelete !== []) {
+                DocumentBlockModel::query()
+                    ->where('document_id', $documentId)
+                    ->whereIn('id', $idsToDelete)
+                    ->delete();
+            }
+        });
+    }
+
+    public function delete(DocumentId $id): void
+    {
+        $deleted = DocumentModel::query()->whereKey($id->value)->delete();
+        if ($deleted === 0) {
+            throw DocumentNotFound::withId($id);
         }
     }
 }

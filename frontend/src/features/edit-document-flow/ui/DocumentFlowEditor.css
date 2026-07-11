@@ -1,41 +1,41 @@
 .document-flow-editor-wrap {
-  background: #d8d8d8;
+  background: transparent;
+}
+
+.document-flow-editor-wrap--loading .document-flow-editor__loading {
+  margin: 48px auto;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
 }
 
 .document-flow-editor {
   position: relative;
   display: flex;
   justify-content: center;
-  padding: 24px 24px 64px;
+  padding: 24px 16px 48px;
 }
 
 .document-flow-editor__canvas {
   position: relative;
-  width: var(--document-page-width, 210mm);
-  max-width: 100%;
-  flex: 0 0 auto;
+  width: 100%;
+  max-width: 820px;
+  flex: 1 1 auto;
   margin: 0 auto;
 }
 
 .document-flow-editor__page-frame {
   width: 100%;
-  min-height: var(--document-page-height, 297mm);
   box-sizing: border-box;
-  padding: var(--document-page-margin-top, var(--document-page-margin, 15mm))
-    var(--document-page-margin-right, var(--document-page-margin, 15mm))
-    var(--document-page-margin-bottom, var(--document-page-margin, 15mm))
-    var(--document-page-margin-left, var(--document-page-margin, 15mm));
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .document-flow-editor__content {
   display: block;
   width: 100%;
-  min-height: calc(
-    var(--document-page-height, 297mm) - var(--document-page-margin-top, var(--document-page-margin, 15mm)) -
-      var(--document-page-margin-bottom, var(--document-page-margin, 15mm))
-  );
+  min-height: 240px;
   outline: none;
   cursor: text;
   font-family: var(--document-default-font, 'DejaVu Serif', 'Liberation Serif', 'Times New Roman', Times, serif);
@@ -78,6 +78,9 @@
 }
 
 .document-flow-editor__content .doc-flow-block[data-block-type='image'] {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
   cursor: pointer;
 }
 
@@ -109,28 +112,215 @@
   content: '🖼 ';
 }
 
-/* Figure gallery: shared canvas coordinates for images, arrows, and labels. */
-.document-flow-editor__content .doc-figure-gallery--positioned {
-  position: relative;
-  display: block;
+.document-flow-editor__content .doc-image-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--doc-image-grid-cols, 2), minmax(0, 1fr));
+  gap: 12px;
+  margin: 0.75em 0;
 }
 
-.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-gallery__canvas,
-.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-gallery__captions {
-  position: relative;
-}
-
-.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-caption-cell {
+.document-flow-editor__content .doc-image-grid .doc-image {
   margin: 0;
-  text-align: center;
 }
 
-.document-flow-editor__content .doc-figure-gallery--positioned .doc-figure-caption-cell .doc-figure-caption {
-  display: block;
+.document-flow-editor__content .doc-image-grid .doc-image img {
   width: 100%;
-  text-align: center;
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
-.document-flow-editor__content .doc-figure-gallery--positioned .doc-image--inline {
-  margin: 0;
+.document-flow-editor__content .doc-image--flowing img {
+  height: auto;
+  display: block;
+}
+
+.document-flow-editor__content .doc-image--flowing:not([data-ooxml-width]) img {
+  width: 100%;
+  max-width: 100%;
+}
+
+.document-flow-editor__content .doc-flow-image-block {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.document-flow-editor__content .doc-flow-image-block__resize,
+.document-flow-editor__content .doc-flow-image-block__edit {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='image']:hover .doc-flow-image-block__resize,
+.document-flow-editor__content .doc-flow-block[data-block-type='image'].doc-flow-block--active .doc-flow-image-block__resize,
+.document-flow-editor__content .doc-flow-block[data-block-type='image']:hover .doc-flow-image-block__edit,
+.document-flow-editor__content .doc-flow-block[data-block-type='image'].doc-flow-block--active .doc-flow-image-block__edit {
+  opacity: 1;
+}
+
+.document-flow-editor__content .doc-flow-image-block__resize {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #f26522;
+  border-radius: 2px;
+  background: #fff;
+  cursor: nwse-resize;
+  z-index: 2;
+}
+
+.document-flow-editor__content .doc-flow-image-block__edit {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #e8e8e8;
+  border-radius: 50%;
+  background: #fff;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.document-flow-editor__content .doc-flow-image-block__edit:hover {
+  color: #f26522;
+  border-color: #f26522;
+  background: #fff5ef;
+}
+
+.document-flow-editor__content .ProseMirror-focused {
+  outline: none;
+}
+
+.document-flow-editor__content p,
+.document-flow-editor__content h2,
+.document-flow-editor__content h3,
+.document-flow-editor__content ul,
+.document-flow-editor__content ol {
+  margin: 0 0 0.75em;
+}
+
+.document-flow-editor__content .doc-flow-table-block {
+  margin: 0 0 0.75em;
+}
+
+.document-flow-editor__content .tableWrapper {
+  overflow-x: auto;
+  margin: 0 0 0.75em;
+}
+
+.document-flow-editor-wrap .ProseMirror table,
+.document-flow-editor-wrap .doc-flow-table-block table {
+  border-collapse: collapse !important;
+  max-width: 100%;
+}
+
+.document-flow-editor-wrap .ProseMirror td,
+.document-flow-editor-wrap .ProseMirror th,
+.document-flow-editor-wrap .doc-flow-table-block td,
+.document-flow-editor-wrap .doc-flow-table-block th {
+  border: 1px solid #bbb !important;
+  padding: 8px 10px !important;
+  vertical-align: top !important;
+  min-width: 48px;
+}
+
+.document-flow-editor-wrap .ProseMirror table.doc-table--layout td,
+.document-flow-editor-wrap .ProseMirror table.doc-table--layout th,
+.document-flow-editor-wrap .doc-flow-table-block table.doc-table--layout td,
+.document-flow-editor-wrap .doc-flow-table-block table.doc-table--layout th {
+  border: 1px solid #bbb !important;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] {
+  margin: 0 0 0.75em;
+  position: relative;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] table.doc-table {
+  border-collapse: collapse;
+  font-size: 10pt;
+  max-width: 100%;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] table.doc-table:not([style*='width']) {
+  width: 100%;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] table.doc-table td,
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] table.doc-table th {
+  padding: 8px 10px;
+  vertical-align: top;
+  min-width: 48px;
+  border: 1px solid #ccc;
+  box-shadow: inset 0 0 0 1px #ccc;
+}
+
+/* Layout tables from DOCX often have border:0 globally — show a grid in the editor. */
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] table.doc-table--layout td,
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] table.doc-table--layout th {
+  border: 1px solid #ccc;
+  box-shadow: inset 0 0 0 1px #ccc;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(242, 101, 34, 0.12);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] .selectedCell {
+  position: relative;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: 0;
+  width: 4px;
+  background-color: rgba(242, 101, 34, 0.55);
+  pointer-events: auto;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.document-flow-editor__content .doc-flow-block[data-block-type='table']:hover .column-resize-handle,
+.document-flow-editor__content .doc-flow-block[data-block-type='table'] .resize-cursor .column-resize-handle {
+  opacity: 1;
+}
+
+.document-flow-editor__content .doc-image--wrap-square {
+  float: left;
+  margin: 0 16px 12px 0;
+  max-width: 45%;
+}
+
+.document-flow-editor__content .doc-image--wrap-tight {
+  float: left;
+  margin: 0 12px 8px 0;
+  max-width: 40%;
+}
+
+.document-flow-editor__content figcaption {
+  font-size: 10pt;
+  color: #666;
+  margin-top: 6px;
+}
+
+.document-flow-editor__content .doc-flow-block--table-active {
+  outline: 1px dashed rgba(242, 101, 34, 0.35);
 }

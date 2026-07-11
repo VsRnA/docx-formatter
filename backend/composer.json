@@ -4,9 +4,10 @@
     "description": "Internal docx instruction processing service",
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^11.0",
-        "laravel/tinker": "^2.9",
         "guzzlehttp/guzzle": "^7.8",
+        "laravel/framework": "^11.0",
+        "laravel/horizon": "^5.29",
+        "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.0",
         "symfony/html-sanitizer": "^7.0"
     },

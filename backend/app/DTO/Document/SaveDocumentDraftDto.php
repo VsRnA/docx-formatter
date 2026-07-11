@@ -10,5 +10,6 @@ final readonly class SaveDocumentDraftDto
     public function __construct(
         public string $documentId,
         public array $blocks,
+        public bool $createAutosaveCheckpoint = false,
     ) {}
 }

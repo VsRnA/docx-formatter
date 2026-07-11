@@ -22,6 +22,7 @@ class SaveDocumentDraftRequest extends FormRequest
             'blocks.*.styles' => ['nullable', 'array'],
             'blocks.*.meta' => ['nullable', 'array'],
             'blocks.*.assets' => ['nullable', 'array'],
+            'create_autosave_checkpoint' => ['sometimes', 'boolean'],
         ];
     }
 }

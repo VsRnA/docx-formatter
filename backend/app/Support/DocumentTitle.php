@@ -30,9 +30,6 @@ final class DocumentTitle
         );
     }
 
-    /**
-     * @param  mixed  $originalFilename
-     */
     private static function displayFromParts(string $title, mixed $originalFilename): string
     {
         $original = $originalFilename;

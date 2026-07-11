@@ -4,13 +4,13 @@ namespace App\Infrastructure\Docx\Ooxml\Parsing\Paragraph;
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\ValueObject\BlockType;
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
+use App\Infrastructure\Docx\Ooxml\Parsing\Layout\ParagraphLayoutHelper;
+use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
 use App\Infrastructure\Docx\Ooxml\Styles\OoxmlNumberingResolver;
 use App\Infrastructure\Docx\Ooxml\Styles\OoxmlStyleResolver;
 use App\Infrastructure\Docx\Ooxml\Writing\OoxmlTextSegmentCollector;
-use App\Infrastructure\Docx\Ooxml\Parsing\Layout\ParagraphLayoutHelper;
-use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
-use App\Domain\Docx\ValueObject\ParseContext;
 use DOMElement;
 
 final class ParagraphBlockFactory

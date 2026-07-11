@@ -1,11 +1,15 @@
 .document-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
   line-height: 1.4;
-  color: #595959;
   white-space: nowrap;
+  background: #f5f5f5;
+  color: #767676;
 }
 
 .document-status-badge__dot {
@@ -13,31 +17,36 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #bfbfbf;
+  background: currentColor;
+  opacity: 0.85;
 }
 
-.document-status-badge--ready .document-status-badge__dot {
-  background: #52a946;
+.document-status-badge--ready {
+  background: #f0f9eb;
+  color: #3d8a1f;
 }
 
-.document-status-badge--published .document-status-badge__dot {
-  background: #4a6579;
+.document-status-badge--published {
+  background: #eef3f6;
+  color: #3a5568;
 }
 
-.document-status-badge--processing .document-status-badge__dot,
-.document-status-badge--uploading .document-status-badge__dot {
-  background: #8c8c8c;
+.document-status-badge--draft {
+  background: #f5f5f5;
+  color: #767676;
 }
 
-.document-status-badge--draft .document-status-badge__dot {
-  background: #bfbfbf;
+.document-status-badge--processing,
+.document-status-badge--uploading {
+  background: #f5f5f5;
+  color: #767676;
 }
 
-.document-status-badge--failed .document-status-badge__dot {
-  background: #cf5c5c;
+.document-status-badge--failed {
+  background: #fdf1f0;
+  color: #b23c3c;
 }
 
 .document-status-badge__label {
-  font-weight: 400;
   letter-spacing: 0.01em;
 }

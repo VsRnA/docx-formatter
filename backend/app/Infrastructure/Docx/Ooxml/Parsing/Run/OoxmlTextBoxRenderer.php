@@ -2,11 +2,11 @@
 
 namespace App\Infrastructure\Docx\Ooxml\Parsing\Run;
 
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlAnchorLayoutParser;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlCss;
-use App\Domain\Docx\ValueObject\ParseContext;
 use DOMElement;
 
 final class OoxmlTextBoxRenderer
@@ -105,7 +105,7 @@ final class OoxmlTextBoxRenderer
             'min-width: 0',
             $minWidthPx ? 'min-width:'.$minWidthPx.'px' : null,
             $minHeightPx ? 'min-height:'.$minHeightPx.'px' : null,
-        ]). '>'.$html.'</div>';
+        ]).'>'.$html.'</div>';
     }
 
     /**

@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     git \
     curl \
-    && docker-php-ext-install pdo pdo_pgsql zip xml gd \
+    && docker-php-ext-install pdo pdo_pgsql zip xml gd pcntl \
     && install-php-extensions redis \
     && rm -rf /var/lib/apt/lists/*
 

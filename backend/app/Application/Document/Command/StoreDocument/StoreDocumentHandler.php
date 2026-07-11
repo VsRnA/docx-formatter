@@ -4,6 +4,7 @@ namespace App\Application\Document\Command\StoreDocument;
 
 use App\Domain\Document\Entity\Document;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
+use App\Domain\Document\Repository\ResourceRepositoryInterface;
 use App\Domain\Document\ValueObject\DocumentId;
 use App\Domain\Document\ValueObject\DocumentMeta;
 use App\Domain\Document\ValueObject\DocumentStatus;
@@ -12,7 +13,6 @@ use App\DTO\Document\StoreDocumentDto;
 use App\Enums\ResourceType;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\Document as DocumentModel;
-use App\Domain\Document\Repository\ResourceRepositoryInterface;
 use App\Support\DocumentTitle;
 use Illuminate\Support\Str;
 

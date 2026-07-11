@@ -2,14 +2,13 @@
 
 namespace Tests\Unit;
 
-use App\Domain\Document\Port\HtmlRendererPort;
 use App\Enums\BlockType;
-use App\Models\DocumentBlock;
-use App\Services\Ai\MockBlockNormalizerService;
 use App\Infrastructure\Document\Normalize\BlockNormalizationService;
 use App\Infrastructure\Docx\Ooxml\Ir\HtmlRenderer;
 use App\Infrastructure\Docx\Ooxml\Ir\Renderers\FallbackIrRenderer;
 use App\Infrastructure\Docx\Ooxml\Ir\Renderers\TextBlockIrRenderer;
+use App\Infrastructure\External\Ai\MockBlockNormalizerService;
+use App\Models\DocumentBlock;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 

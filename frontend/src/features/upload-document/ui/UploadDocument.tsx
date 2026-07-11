@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { documentApi } from '@/entities/document';
 import { ROUTES } from '@/shared/config/env';
+import { MAX_UPLOAD_MB } from '@/shared/constants';
 import { validateDocxFile } from '@/shared/lib/validateDocxFile';
 import './UploadDocument.css';
 
@@ -68,7 +69,7 @@ export function UploadDocument() {
             </p>
             <p className="ant-upload-text">Перетащите .docx или нажмите для выбора</p>
             <p className="ant-upload-hint">
-              Принимаются только документы Word (.docx), до 50 МБ. Другие форматы будут отклонены.
+              Принимаются только документы Word (.docx), до {MAX_UPLOAD_MB} МБ. Другие форматы будут отклонены.
             </p>
           </>
         )}

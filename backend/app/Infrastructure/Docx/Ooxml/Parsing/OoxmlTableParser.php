@@ -4,10 +4,10 @@ namespace App\Infrastructure\Docx\Ooxml\Parsing;
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\ValueObject\BlockType;
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableHtmlBuilder;
-use App\Domain\Docx\ValueObject\ParseContext;
 use App\Support\Constants\HtmlCssClasses;
 use DOMElement;
 

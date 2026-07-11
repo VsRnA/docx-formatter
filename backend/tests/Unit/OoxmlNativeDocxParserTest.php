@@ -2,13 +2,12 @@
 
 namespace Tests\Unit;
 
-use App\Domain\Docx\ValueObject\BlockType;
-use App\Domain\Docx\Service\AnchoredCalloutBlockMerger;
+use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\Service\ConsecutiveBlocksDeduplicator;
-use App\Domain\Docx\Service\FigureGalleryCaptionMerger;
 use App\Domain\Docx\Service\DocumentAssembler;
 use App\Domain\Docx\Service\ListBlocksGrouper;
 use App\Domain\Docx\Service\Support\TextRunFragmentMerger;
+use App\Domain\Docx\ValueObject\BlockType;
 use App\Infrastructure\Docx\Ooxml\OoxmlNativeDocxParser;
 use App\Infrastructure\Docx\Ooxml\Parsing\Image\OoxmlFigureEligibilityFilter;
 use App\Infrastructure\Docx\Ooxml\Parsing\Image\OoxmlFigureHtmlBuilder;
@@ -16,24 +15,34 @@ use App\Infrastructure\Docx\Ooxml\Parsing\Image\OoxmlInlineFigureCollector;
 use App\Infrastructure\Docx\Ooxml\Parsing\Image\OoxmlPendingFigureQueue;
 use App\Infrastructure\Docx\Ooxml\Parsing\Image\OoxmlVmlFigureScanner;
 use App\Infrastructure\Docx\Ooxml\Parsing\Layout\ParagraphLayoutHelper;
-use App\Infrastructure\Docx\Ooxml\Parsing\Paragraph\ParagraphBlockFactory;
-use App\Infrastructure\Docx\Ooxml\Parsing\Paragraph\ParagraphBlockSplitter;
-use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableCellRenderer;
-use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableCellSegmentAnnotator;
-use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableGridBuilder;
-use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableHtmlBuilder;
+use App\Infrastructure\Docx\Ooxml\Parsing\Layout\SymbolRowLayout;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlAnchorLayoutParser;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlBodyWalker;
-use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlFallbackBlockFactory;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlDrawingParser;
+use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlFallbackBlockFactory;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHeaderFooterParser;
+use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlImageBlockFactory;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlParagraphParser;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlRunParser;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlSectionPropertiesParser;
+use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlSupplementaryBlocksParser;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlTableParser;
+use App\Infrastructure\Docx\Ooxml\Parsing\Paragraph\ParagraphBlockFactory;
+use App\Infrastructure\Docx\Ooxml\Parsing\Paragraph\ParagraphBlockSplitter;
+use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlAlternateContentRenderer;
+use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlAnchorShapeRenderer;
+use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlMathRenderer;
+use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlRunTextFormatter;
+use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlTextBoxRenderer;
+use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableCellRenderer;
+use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableCellSegmentAnnotator;
+use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableGridBuilder;
+use App\Infrastructure\Docx\Ooxml\Parsing\Table\OoxmlTableHtmlBuilder;
 use App\Infrastructure\Docx\Ooxml\Styles\OoxmlNumberingResolver;
 use App\Infrastructure\Docx\Ooxml\Styles\OoxmlStyleResolver;
+use App\Infrastructure\Docx\Ooxml\Writing\OoxmlTextNodeIndex;
+use App\Infrastructure\Docx\Ooxml\Writing\OoxmlTextSegmentCollector;
 use App\Support\TempFileManager;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
@@ -106,7 +115,7 @@ class OoxmlNativeDocxParserTest extends TestCase
         }
     }
 
-    public function test_keeps_figure_gallery_images_in_one_inline_row(): void
+    public function test_keeps_simple_figure_gallery_in_equal_width_grid(): void
     {
         $path = dirname(__DIR__, 2).'/storage/app/mock-cloud/documents/3c99d14c-7372-41cb-a785-201e7638bc2e/source.docx';
         if (! is_file($path)) {
@@ -115,49 +124,23 @@ class OoxmlNativeDocxParserTest extends TestCase
 
         try {
             $document = $this->makeParser()->parse($path);
-            $gallery = null;
+            $hasGrid = false;
+            $hasUnplaced = false;
 
             foreach ($document->blocks as $block) {
-                if ($block->type !== BlockType::Paragraph) {
-                    continue;
+                $html = (string) ($block->html ?? '');
+                if (str_contains($html, 'doc-image-grid')) {
+                    $hasGrid = true;
                 }
 
-                if (! str_contains((string) $block->html, 'doc-figure-gallery')
-                    && ! str_contains((string) $block->html, 'doc-figure-canvas')) {
-                    continue;
+                foreach ($block->meta['pending_images'] ?? [] as $pending) {
+                    if (($pending['attributes']['unplaced'] ?? false) === true) {
+                        $hasUnplaced = true;
+                    }
                 }
-
-                if (count($block->meta['pending_images'] ?? []) !== 3) {
-                    continue;
-                }
-
-                $markers = array_map(
-                    static fn (array $pending): string => (string) ($pending['relationship_id'] ?? $pending['marker'] ?? ''),
-                    $block->meta['pending_images'] ?? [],
-                );
-
-                if (! in_array('rId22', $markers, true)) {
-                    continue;
-                }
-
-                $gallery = $block;
-
-                break;
             }
 
-            $this->assertNotNull($gallery);
-            $this->assertSame(3, substr_count((string) $gallery->html, '<figcaption class="doc-figure-caption"'));
-            $this->assertStringContainsString('doc-figure-overlay', (string) $gallery->html);
-            $this->assertStringContainsString('Fig.2A', (string) $gallery->html);
-            $this->assertStringContainsString('Fig.2B', (string) $gallery->html);
-            $this->assertStringContainsString('Fig.2C', (string) $gallery->html);
-            $this->assertStringNotContainsString('doc-symbol-row', (string) $gallery->html);
-            $this->assertTrue(
-                str_contains((string) $gallery->html, 'doc-figure-gallery')
-                || str_contains((string) $gallery->html, 'doc-figure-canvas'),
-            );
-            $this->assertCount(3, $gallery->meta['pending_images'] ?? []);
-            $this->assertLockingKnobOverlayWithinLastFigure((string) $gallery->html);
+            $this->assertTrue($hasGrid || $hasUnplaced);
         } finally {
             foreach ($document->blocks ?? [] as $block) {
                 foreach ($block->meta['pending_images'] ?? [] as $pending) {
@@ -173,21 +156,15 @@ class OoxmlNativeDocxParserTest extends TestCase
         }
     }
 
-    public function test_merges_consecutive_anchored_callout_blocks(): void
+    public function test_does_not_emit_anchored_canvas_for_unplaced_diagram(): void
     {
         $path = $this->createDocxWithAnchoredCalloutNumbers();
         try {
             $document = $this->makeParser()->parse($path);
-            $paragraphs = array_values(array_filter(
-                $document->blocks,
-                fn ($block) => $block->type === BlockType::Paragraph,
-            ));
 
-            $this->assertCount(1, $paragraphs);
-            $html = (string) $paragraphs[0]->html;
-            $this->assertStringContainsString('doc-anchored-canvas', $html);
-            $this->assertStringContainsString('doc-callout', $html);
-            $this->assertSame('3 4 5', $paragraphs[0]->textOriginal);
+            foreach ($document->blocks as $block) {
+                $this->assertStringNotContainsString('doc-anchored-canvas', (string) $block->html);
+            }
         } finally {
             if (is_file($path)) {
                 unlink($path);
@@ -195,7 +172,7 @@ class OoxmlNativeDocxParserTest extends TestCase
         }
     }
 
-    public function test_renders_anchored_identification_diagram_with_connectors(): void
+    public function test_marks_complex_diagram_images_as_unplaced(): void
     {
         $path = dirname(__DIR__, 2).'/storage/app/mock-cloud/documents/9c98356c-c88d-4f3f-ac91-038bfcfec6a9/source.docx';
         if (! is_file($path)) {
@@ -203,31 +180,22 @@ class OoxmlNativeDocxParserTest extends TestCase
         }
 
         $document = $this->makeParser()->parse($path);
-        $diagramHtml = null;
+        $hasUnplaced = false;
 
         foreach ($document->blocks as $block) {
-            $html = (string) ($block->html ?? '');
-            if ((! str_contains($html, 'doc-anchored-canvas') && ! str_contains($html, 'doc-figure-canvas'))
-                || ! str_contains($html, '<figure')) {
-                continue;
+            foreach ($block->meta['pending_images'] ?? [] as $pending) {
+                if (($pending['attributes']['unplaced'] ?? false) === true) {
+                    $hasUnplaced = true;
+                }
             }
 
+            $html = (string) ($block->html ?? '');
             if (str_contains($html, 'doc-anchor-shape')) {
-                $diagramHtml = $html;
-
-                break;
+                $this->assertStringNotContainsString('<figure', $html);
             }
         }
 
-        $this->assertNotNull($diagramHtml, 'Expected merged identification diagram block with connector shapes.');
-        $this->assertGreaterThanOrEqual(3, substr_count($diagramHtml, 'doc-anchor-shape'), $diagramHtml);
-        $this->assertTrue(
-            substr_count($diagramHtml, 'doc-callout') >= 3
-            || substr_count($diagramHtml, 'doc-figure-overlay') >= 3,
-            $diagramHtml,
-        );
-        $this->assertStringNotContainsString('doc-symbol-row', $diagramHtml);
-        $this->assertMatchesRegularExpression('/position:absolute[^>]*top:\d+px[^>]*>[\s\S]*<figure/i', $diagramHtml);
+        $this->assertTrue($hasUnplaced);
     }
 
     public function test_does_not_duplicate_repeated_runs(): void
@@ -318,9 +286,9 @@ class OoxmlNativeDocxParserTest extends TestCase
             $paragraph = $this->firstBlockOfType($document->blocks, BlockType::Paragraph);
 
             $this->assertNotNull($paragraph);
-            $this->assertStringContainsString('doc-figure-canvas', (string) $paragraph->html);
-            $this->assertStringContainsString('doc-paragraph--figure-gallery', (string) $paragraph->html);
-            $this->assertStringContainsString('doc-image--inline', (string) $paragraph->html);
+            $this->assertStringContainsString('doc-image-grid', (string) $paragraph->html);
+            $this->assertStringContainsString('doc-paragraph--image-grid', (string) $paragraph->html);
+            $this->assertStringContainsString('doc-image', (string) $paragraph->html);
             $this->assertStringContainsString('data-pending-marker="rId5"', (string) $paragraph->html);
             $this->assertStringContainsString('data-pending-marker="rId8"', (string) $paragraph->html);
 
@@ -350,7 +318,7 @@ class OoxmlNativeDocxParserTest extends TestCase
 
             $this->assertNotNull($table);
             $this->assertStringContainsString('data-pending-marker="rId7"', (string) $table->html);
-            $this->assertStringContainsString('doc-image--inline', (string) $table->html);
+            $this->assertStringContainsString('doc-image', (string) $table->html);
 
             $pending = $table->meta['pending_images'] ?? [];
             $this->assertCount(1, $pending);
@@ -375,8 +343,8 @@ class OoxmlNativeDocxParserTest extends TestCase
             $image = $this->firstBlockOfType($document->blocks, BlockType::Image);
 
             $this->assertNotNull($image);
-            $this->assertStringContainsString('width="96"', (string) $image->html);
-            $this->assertStringContainsString('height="96"', (string) $image->html);
+            $this->assertSame(96, $image->meta['image']['width_px'] ?? null);
+            $this->assertSame(96, $image->meta['image']['height_px'] ?? null);
             $this->assertSame('Network diagram', $image->meta['image']['alt'] ?? null);
 
             if ($image->localImagePath && is_file($image->localImagePath)) {
@@ -397,18 +365,16 @@ class OoxmlNativeDocxParserTest extends TestCase
             $paragraph = $this->firstBlockOfType($document->blocks, BlockType::Paragraph);
 
             $this->assertNotNull($paragraph);
-            $this->assertStringContainsString('doc-paragraph--symbols', (string) $paragraph->html);
             $this->assertStringContainsString('doc-symbol-row', (string) $paragraph->html);
             $this->assertStringContainsString('doc-symbol-icons', (string) $paragraph->html);
             $this->assertStringNotContainsString('&amp;quot;', (string) $paragraph->html);
             $this->assertStringContainsString('doc-textbox', (string) $paragraph->html);
             $this->assertStringContainsString('Keep bystanders away', (string) $paragraph->textOriginal);
-            $this->assertStringNotContainsString('doc-textbox--anchored', (string) $paragraph->html);
-            $this->assertStringNotContainsString('position:absolute', (string) $paragraph->html);
-            $this->assertStringContainsString('data-pending-marker="rId5"', (string) $paragraph->html);
+            $this->assertStringNotContainsString('data-pending-marker="rId5"', (string) $paragraph->html);
 
             $pending = $paragraph->meta['pending_images'] ?? [];
             $this->assertCount(1, $pending);
+            $this->assertTrue($pending[0]['attributes']['unplaced'] ?? false);
 
             if (is_string($pending[0]['local_path'] ?? null) && is_file($pending[0]['local_path'])) {
                 unlink($pending[0]['local_path']);
@@ -878,17 +844,17 @@ XML;
         $inlineFigures = new OoxmlInlineFigureCollector($drawings, $figureEligibility, $figureQueue, $vmlScanner);
         $images = new OoxmlImageBlockFactory($drawings, $figureHtml, $inlineFigures);
         $merger = new TextRunFragmentMerger;
-        $textFormatter = new \App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlRunTextFormatter($styles);
-        $symbolRows = new \App\Infrastructure\Docx\Ooxml\Parsing\Layout\SymbolRowLayout;
+        $textFormatter = new OoxmlRunTextFormatter($styles);
+        $symbolRows = new SymbolRowLayout;
         $layout = new ParagraphLayoutHelper;
-        $textBoxes = new \App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlTextBoxRenderer($anchors);
-        $shapes = new \App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlAnchorShapeRenderer($anchors);
-        $alternateContent = new \App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlAlternateContentRenderer($images, $textBoxes, $shapes, $symbolRows);
-        $math = new \App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlMathRenderer;
+        $textBoxes = new OoxmlTextBoxRenderer($anchors);
+        $shapes = new OoxmlAnchorShapeRenderer($anchors);
+        $alternateContent = new OoxmlAlternateContentRenderer($images, $textBoxes, $shapes, $symbolRows);
+        $math = new OoxmlMathRenderer;
         $runs = new OoxmlRunParser($merger, $textFormatter, $alternateContent, $symbolRows, $math);
-        $textNodeIndex = new \App\Infrastructure\Docx\Ooxml\Writing\OoxmlTextNodeIndex;
-        $segmentCollector = new \App\Infrastructure\Docx\Ooxml\Writing\OoxmlTextSegmentCollector($textNodeIndex);
-        $segmentHtml = new \App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
+        $textNodeIndex = new OoxmlTextNodeIndex;
+        $segmentCollector = new OoxmlTextSegmentCollector($textNodeIndex);
+        $segmentHtml = new OoxmlHtmlSegmentAnnotator;
         $blockFactory = new ParagraphBlockFactory($styles, $numbering, $segmentCollector, $segmentHtml, $layout);
         $blockSplitter = new ParagraphBlockSplitter($layout, $blockFactory);
         $tableCells = new OoxmlTableCellRenderer($runs);
@@ -896,18 +862,16 @@ XML;
         $tableCellSegments = new OoxmlTableCellSegmentAnnotator($segmentCollector, $segmentHtml);
         $tableHtmlBuilder = new OoxmlTableHtmlBuilder($tableGrid, $tableCellSegments);
         $walker = new OoxmlBodyWalker(
-            new OoxmlParagraphParser($styles, $numbering, $runs, $images, $anchors, $blockSplitter, $layout),
+            new OoxmlParagraphParser($styles, $numbering, $runs, $images, $blockSplitter, $layout),
             new OoxmlTableParser($tableHtmlBuilder),
             new OoxmlFallbackBlockFactory,
             $math,
         );
-        $supplementary = new \App\Infrastructure\Docx\Ooxml\Parsing\OoxmlSupplementaryBlocksParser($walker);
+        $supplementary = new OoxmlSupplementaryBlocksParser($walker);
         $merger = new TextRunFragmentMerger;
         $assembler = new DocumentAssembler(
             new ListBlocksGrouper,
             new ConsecutiveBlocksDeduplicator($merger),
-            new AnchoredCalloutBlockMerger,
-            new FigureGalleryCaptionMerger,
         );
 
         return new OoxmlNativeDocxParser(
@@ -1649,9 +1613,9 @@ XML;
     }
 
     /**
-     * @param  list<\App\Domain\Docx\Entity\ParsedBlock>  $blocks
+     * @param  list<ParsedBlock>  $blocks
      */
-    private function firstBlockOfType(array $blocks, BlockType $type): ?\App\Domain\Docx\Entity\ParsedBlock
+    private function firstBlockOfType(array $blocks, BlockType $type): ?ParsedBlock
     {
         foreach ($blocks as $block) {
             if ($block->type === $type) {

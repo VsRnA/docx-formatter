@@ -2,12 +2,12 @@
 
 namespace App\Application\Document\Processing\Steps;
 
+use App\Application\Document\Processing\DocumentProcessingState;
 use App\Domain\Document\Entity\Document;
 use App\Domain\Document\Port\DocumentPipelineStepPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\ProcessingStage;
 use App\Domain\Shared\Port\FileStoragePort;
-use App\Application\Document\Processing\DocumentProcessingState;
 use App\Support\TempFileManager;
 use RuntimeException;
 

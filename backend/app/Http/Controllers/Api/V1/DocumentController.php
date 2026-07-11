@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Application\Document\Command\PublishDocument\PublishDocumentHandler;
+use App\Application\Document\Command\DeleteDocument\DeleteDocumentHandler;
 use App\Application\Document\Command\ReprocessDocument\ReprocessDocumentHandler;
 use App\Application\Document\Command\SaveDocumentDraft\SaveDocumentDraftHandler;
 use App\Application\Document\Command\StoreDocument\StoreDocumentHandler;
 use App\Application\Document\Query\ExportDocumentHtml\ExportDocumentHtmlHandler;
 use App\Application\Document\Query\GetDocumentEditor\GetDocumentEditorHandler;
+use App\Domain\Document\Query\DocumentListQueryPort;
+use App\Domain\Shared\Port\FileStoragePort;
 use App\DTO\Document\SaveDocumentDraftDto;
 use App\DTO\Document\SaveDraftBlockDto;
 use App\DTO\Document\StoreDocumentDto;
@@ -18,11 +20,10 @@ use App\Http\Resources\DocumentBlockResource;
 use App\Http\Resources\DocumentResource;
 use App\Http\Resources\DocumentResourceItemResource;
 use App\Models\Document;
-use App\Domain\Document\Query\DocumentListQueryPort;
-use App\Domain\Shared\Port\FileStoragePort;
 use App\Support\DocumentTitle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Symfony\Component\HttpFoundation\Response;
 
 class DocumentController extends Controller
 {
@@ -31,15 +32,24 @@ class DocumentController extends Controller
         private readonly StoreDocumentHandler $storeDocument,
         private readonly GetDocumentEditorHandler $getEditor,
         private readonly SaveDocumentDraftHandler $saveDraft,
-        private readonly PublishDocumentHandler $publishDocument,
         private readonly ExportDocumentHtmlHandler $exportHtml,
         private readonly ReprocessDocumentHandler $reprocessDocument,
+        private readonly DeleteDocumentHandler $deleteDocument,
         private readonly FileStoragePort $storage,
     ) {}
 
     public function index(): AnonymousResourceCollection
     {
-        return DocumentResource::collection($this->documents->paginate());
+        $page = $this->documents->paginate();
+
+        return DocumentResource::collection($page->items)->additional([
+            'meta' => [
+                'current_page' => $page->currentPage,
+                'last_page' => $page->lastPage,
+                'total' => $page->total,
+                'per_page' => $page->perPage,
+            ],
+        ]);
     }
 
     public function store(StoreDocumentRequest $request): JsonResponse
@@ -81,7 +91,7 @@ class DocumentController extends Controller
         ]);
     }
 
-    public function downloadTranslated(Document $document): \Symfony\Component\HttpFoundation\Response
+    public function downloadTranslated(Document $document): Response
     {
         $key = $document->meta_json['translated_file_key'] ?? null;
         if (! is_string($key) || $key === '' || ! $this->storage->exists($key)) {
@@ -156,17 +166,26 @@ class DocumentController extends Controller
             assets: $b['assets'] ?? null,
         ))->all();
 
-        $updated = $this->saveDraft->execute(new SaveDocumentDraftDto($document->id, $blocks));
+        $updated = $this->saveDraft->execute(new SaveDocumentDraftDto(
+            documentId: $document->id,
+            blocks: $blocks,
+            createAutosaveCheckpoint: filter_var(
+                $request->input('create_autosave_checkpoint', false),
+                FILTER_VALIDATE_BOOLEAN,
+            ),
+        ));
 
         return new DocumentResource($updated);
     }
 
-    public function publish(Document $document): DocumentResource
+    public function destroy(Document $document): JsonResponse
     {
-        return new DocumentResource($this->publishDocument->execute($document->id));
+        $this->deleteDocument->execute($document->id);
+
+        return response()->json(null, 204);
     }
 
-    public function exportHtml(Document $document): \Symfony\Component\HttpFoundation\Response
+    public function exportHtml(Document $document): Response
     {
         $html = $this->exportHtml->execute($document->id);
         $filename = preg_replace('/[^\p{L}\p{N}\-_]+/u', '-', DocumentTitle::display($document)) ?: 'document';

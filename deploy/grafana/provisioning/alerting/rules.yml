@@ -1,0 +1,55 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: docx-formatter-alerts
+    folder: Docx Formatter
+    interval: 1m
+    rules:
+      - uid: error-log-spike
+        title: Error log spike (backend/queue)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              editorMode: code
+              expr: sum(count_over_time({service=~"backend|queue"} |~ "(?i)(\"level\":\"error\"|exception|fatal)" [5m]))
+              instant: true
+              queryType: instant
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 5
+                    type: gt
+                  operator:
+                    type: and
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              expression: B
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: More than 5 error log lines in 5 minutes from backend or queue workers.
+        labels:
+          severity: warning
+        isPaused: false

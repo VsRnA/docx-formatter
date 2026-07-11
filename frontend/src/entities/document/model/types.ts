@@ -29,6 +29,7 @@ export interface Document {
   language_to: string;
   created_at: string;
   updated_at: string;
+  revisions_count: number;
   layout?: DocumentLayout | null;
 }
 

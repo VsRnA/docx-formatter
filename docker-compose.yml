@@ -52,7 +52,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: php artisan queue:work redis --sleep=3 --tries=3 --timeout=600
+    command: php artisan horizon
     env_file:
       - .env
     volumes:

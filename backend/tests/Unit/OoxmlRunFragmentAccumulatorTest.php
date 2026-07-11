@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Domain\Docx\Service\Support\TextRunFragmentMerger;
 use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlRunFragmentAccumulator;
 use App\Infrastructure\Docx\Ooxml\Parsing\Run\OoxmlRunTextFormatter;
+use App\Infrastructure\Docx\Ooxml\Styles\OoxmlStyleResolver;
 use DOMDocument;
 use PHPUnit\Framework\TestCase;
 
@@ -14,7 +15,7 @@ final class OoxmlRunFragmentAccumulatorTest extends TestCase
     {
         $accumulator = new OoxmlRunFragmentAccumulator(
             new TextRunFragmentMerger,
-            new OoxmlRunTextFormatter(app(\App\Infrastructure\Docx\Ooxml\Styles\OoxmlStyleResolver::class)),
+            new OoxmlRunTextFormatter(app(OoxmlStyleResolver::class)),
         );
 
         $run = (new DOMDocument)->createElement('r');

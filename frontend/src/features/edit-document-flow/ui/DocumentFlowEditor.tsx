@@ -1,28 +1,44 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react';
+import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import type { DocumentBlock } from '@/entities/block';
 import type { SaveDraftBlockPayload } from '@/entities/document';
 import { documentLayoutStyleVars, type DocumentLayout } from '@/shared/lib/documentLayoutStyle';
+import { repairBlockWrapperHtml } from '../lib/blockEditorHtml';
 import {
-  mergeBlocksToEditorHtml,
-  extractBlockUpdates,
-  insertBlockAfter,
-  removeBlockFromEditor,
-  reorderBlocksInEditor,
-  scrollToBlock,
-  setBlockPageBreakBefore,
-} from '../lib/blockEditorHtml';
+  blocksToEditorJson,
+  createTableDocBlockReplacement,
+  extractBlockUpdatesFromEditor,
+  findBlockDomPos,
+  getActiveBlockFromEditor,
+} from '../lib/tiptap/blockConversion';
+import {
+  insertBlockAfterNode,
+  insertBlockNodeAt,
+  resyncEditorBlocks,
+} from '../lib/tiptap/insertBlockNode';
+import { getDocumentEditorExtensions } from '../lib/tiptap/getExtensions';
+import { TableBubbleMenu } from './TableBubbleMenu';
+import { TableGutterOverlay } from './TableGutterOverlay';
 import './DocumentFlowEditor.css';
 
 export interface DocumentFlowEditorHandle {
   getBlockUpdates: (blocks: DocumentBlock[]) => SaveDraftBlockPayload[];
-  getRoot: () => HTMLDivElement | null;
-  appendBlock: (block: DocumentBlock) => void;
-  insertBlockAfter: (afterBlockId: string | null, block: DocumentBlock) => void;
+  getRoot: () => HTMLElement | null;
+  getEditor: () => Editor | null;
+  appendBlock: (block: DocumentBlock, allBlocks?: DocumentBlock[]) => void;
+  insertBlockAfter: (afterBlockId: string | null, block: DocumentBlock, allBlocks?: DocumentBlock[]) => void;
   removeBlock: (blockId: string) => void;
   reorderBlocks: (orderedIds: string[]) => void;
   updateBlockHtml: (blockId: string, html: string) => void;
   scrollToBlock: (blockId: string) => void;
   getSelectedBlockId: () => string | null;
+  getBlockHtml: (blockId: string, sourceBlocks: DocumentBlock[]) => string | null;
   setBlockPageBreakBefore: (blockId: string, enabled: boolean) => void;
 }
 
@@ -31,57 +47,15 @@ interface Props {
   documentKey: string;
   layout?: DocumentLayout | null;
   activeBlockId?: string | null;
-  onEditorReady?: (editor: HTMLDivElement) => void;
+  onEditorReady?: (editor: HTMLElement) => void;
+  onEditorInstanceReady?: (editor: Editor | null) => void;
   onActiveBlockChange?: (blockId: string | null, blockType: string | null) => void;
   onImageBlockClick?: (blockId: string) => void;
   onTextInput?: () => void;
   onUndo?: () => boolean;
   onRedo?: () => boolean;
   onPasteImage?: (file: File) => void;
-}
-
-function syncActiveBlock(editor: HTMLElement, activeBlockId: string | null | undefined): void {
-  editor.querySelectorAll<HTMLElement>('.doc-flow-block').forEach((wrapper) => {
-    wrapper.classList.toggle('doc-flow-block--active', wrapper.dataset.blockId === activeBlockId);
-  });
-}
-
-function protectImageBlocks(container: HTMLElement): void {
-  container.querySelectorAll<HTMLElement>('[data-block-type="image"]').forEach((wrapper) => {
-    wrapper.querySelectorAll('figure, img, .doc-image__placeholder').forEach((element) => {
-      element.setAttribute('contenteditable', 'false');
-    });
-  });
-
-  container.querySelectorAll<HTMLElement>('figure.doc-image, .doc-image--page-decoration').forEach(
-    (element) => {
-      element.setAttribute('contenteditable', 'false');
-      element.querySelectorAll('img').forEach((child) => {
-        child.setAttribute('contenteditable', 'false');
-      });
-    },
-  );
-
-  container.querySelectorAll<HTMLElement>('.doc-anchored-canvas img, .doc-page-overlay figure').forEach(
-    (element) => {
-      element.setAttribute('contenteditable', 'false');
-    },
-  );
-
-  container.querySelectorAll<HTMLElement>('.doc-figure-gallery, .doc-figure-canvas').forEach((gallery) => {
-    gallery.setAttribute('contenteditable', 'false');
-    gallery.querySelectorAll('figure, figcaption, img, svg, .doc-figure-overlay, .doc-figure-gallery__canvas, .doc-figure-gallery__captions, .doc-figure-canvas__layer, .doc-figure-canvas__captions').forEach((element) => {
-      element.setAttribute('contenteditable', 'false');
-    });
-  });
-}
-
-function getBlockIdFromNode(node: Node | null, editor: HTMLElement): string | null {
-  if (!node) return null;
-  const element = node instanceof Element ? node : node.parentElement;
-  const wrapper = element?.closest<HTMLElement>('[data-block-id]');
-  if (!wrapper || !editor.contains(wrapper)) return null;
-  return wrapper.dataset.blockId ?? null;
+  onDropImage?: (file: File) => void;
 }
 
 export const DocumentFlowEditor = forwardRef<DocumentFlowEditorHandle, Props>(
@@ -92,237 +66,388 @@ export const DocumentFlowEditor = forwardRef<DocumentFlowEditorHandle, Props>(
       layout,
       activeBlockId,
       onEditorReady,
+      onEditorInstanceReady,
       onActiveBlockChange,
       onImageBlockClick,
       onTextInput,
-      onUndo,
-      onRedo,
       onPasteImage,
+      onDropImage,
     },
     ref,
   ) {
-    const editorRef = useRef<HTMLDivElement>(null);
-    const loadedKeyRef = useRef<string | null>(null);
+    const loadedSnapshotRef = useRef<{ editor: Editor; documentKey: string } | null>(null);
     const activeBlockIdRef = useRef<string | null>(null);
+    const blocksRef = useRef(blocks);
+    const pendingInsertsRef = useRef<Array<{ afterBlockId: string | null; block: DocumentBlock }>>([]);
+    blocksRef.current = blocks;
     const layoutStyle = documentLayoutStyleVars(layout);
+    const extensions = useMemo(
+      () =>
+        getDocumentEditorExtensions({
+          onEditImage: (blockId: string) => onImageBlockClick?.(blockId),
+        }),
+      [onImageBlockClick],
+    );
+
+    const editor = useEditor(
+      {
+      extensions,
+      immediatelyRender: false,
+      editorProps: {
+        attributes: {
+          class: 'document-flow-editor__content document-root',
+        },
+        handleDOMEvents: {
+          click: (_view, event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) {
+              return false;
+            }
+
+            const wrapper = target.closest<HTMLElement>('[data-block-id]');
+            const blockId = wrapper?.dataset.blockId ?? null;
+            const blockType = wrapper?.dataset.blockType ?? null;
+
+            if (blockId) {
+              activeBlockIdRef.current = blockId;
+              onActiveBlockChange?.(blockId, blockType);
+            }
+
+            const editTrigger = target.closest('[data-image-edit-trigger]');
+            if (editTrigger && wrapper?.dataset.blockType === 'image' && blockId) {
+              onImageBlockClick?.(blockId);
+              return true;
+            }
+
+            return false;
+          },
+        },
+        handlePaste: (_view, event) => {
+          if (!onPasteImage) {
+            return false;
+          }
+
+          const items = event.clipboardData?.items;
+          if (!items) {
+            return false;
+          }
+
+          for (const item of Array.from(items)) {
+            if (!item.type.startsWith('image/')) {
+              continue;
+            }
+
+            const file = item.getAsFile();
+            if (!file) {
+              continue;
+            }
+
+            event.preventDefault();
+            onPasteImage(file);
+            return true;
+          }
+
+          return false;
+        },
+      },
+      onUpdate: () => {
+        onTextInput?.();
+      },
+      onSelectionUpdate: ({ editor: currentEditor }) => {
+        const active = getActiveBlockFromEditor(currentEditor);
+        if (!active) {
+          return;
+        }
+
+        activeBlockIdRef.current = active.id;
+        onActiveBlockChange?.(active.id, active.type);
+      },
+    },
+    [extensions],
+    );
+
+    useEffect(() => {
+      onEditorInstanceReady?.(editor ?? null);
+
+      return () => {
+        onEditorInstanceReady?.(null);
+      };
+    }, [editor, onEditorInstanceReady]);
 
     useImperativeHandle(ref, () => ({
       getBlockUpdates: (sourceBlocks) =>
-        editorRef.current
-          ? extractBlockUpdates(editorRef.current, sourceBlocks)
-          : sourceBlocks.map((block) => ({
-              id: block.id,
-              type: block.type,
-              sort: block.sort,
-              html: block.html,
-              styles: block.styles_json,
-              meta: block.meta_json,
-            })),
-      getRoot: () => editorRef.current,
-      appendBlock: (block) => {
-        if (!editorRef.current) return;
-        insertBlockAfter(editorRef.current, null, block);
-        protectImageBlocks(editorRef.current);
+        editor ? extractBlockUpdatesFromEditor(editor, sourceBlocks) : [],
+      getRoot: () => editor?.view.dom ?? null,
+      getEditor: () => editor,
+      appendBlock: (block, allBlocks) => {
+        if (!editor) {
+          pendingInsertsRef.current.push({ afterBlockId: null, block });
+          return;
+        }
+
+        const blocksSnapshot = allBlocks ?? blocksRef.current;
+        if (block.type === 'image') {
+          resyncEditorBlocks(editor, blocksSnapshot);
+          return;
+        }
+
+        const inserted = insertBlockNodeAt(editor, editor.state.doc.content.size, block);
+        if (!inserted) {
+          resyncEditorBlocks(editor, blocksSnapshot);
+        }
       },
-      insertBlockAfter: (afterBlockId, block) => {
-        if (!editorRef.current) return;
-        insertBlockAfter(editorRef.current, afterBlockId, block);
-        protectImageBlocks(editorRef.current);
+      insertBlockAfter: (afterBlockId, block, allBlocks) => {
+        if (!editor) {
+          pendingInsertsRef.current.push({ afterBlockId, block });
+          return;
+        }
+
+        const blocksSnapshot = allBlocks ?? blocksRef.current;
+        insertBlockAfterNode(editor, afterBlockId, block, blocksSnapshot);
       },
       removeBlock: (blockId) => {
-        if (!editorRef.current) return;
-        removeBlockFromEditor(editorRef.current, blockId);
+        if (!editor) return;
+
+        const pos = findBlockDomPos(editor, blockId);
+        if (pos === null) return;
+
+        const node = editor.state.doc.nodeAt(pos);
+        if (!node) return;
+
+        editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run();
       },
       reorderBlocks: (orderedIds) => {
-        if (!editorRef.current) return;
-        reorderBlocksInEditor(editorRef.current, orderedIds);
+        if (!editor) return;
+
+        const current = extractBlockUpdatesFromEditor(editor, blocks);
+        const byId = new Map(current.map((item) => [item.id, item]));
+        const reordered = orderedIds
+          .map((id) => byId.get(id))
+          .filter((item): item is SaveDraftBlockPayload => Boolean(item));
+
+        const sourceById = new Map(blocks.map((block) => [block.id, block]));
+        const nextBlocks = reordered.map((item, index) => {
+          const source = sourceById.get(item.id);
+          return source ? { ...source, sort: index, html: item.html } : null;
+        }).filter((block): block is DocumentBlock => block !== null);
+
+        editor.commands.setContent(blocksToEditorJson(nextBlocks));
       },
       updateBlockHtml: (blockId, html) => {
-        const wrapper = editorRef.current?.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`);
-        if (wrapper) {
-          wrapper.innerHTML = html;
-          if (editorRef.current) {
-            protectImageBlocks(editorRef.current);
-          }
+        if (!editor) return;
+
+        const pos = findBlockDomPos(editor, blockId);
+        if (pos === null) return;
+
+        const node = editor.state.doc.nodeAt(pos);
+        if (!node) return;
+
+        if (node.type.name === 'imageDocBlock') {
+          editor.view.dispatch(
+            editor.state.tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              html: repairBlockWrapperHtml(html),
+            }),
+          );
+          return;
+        }
+
+        if (node.type.name === 'tableDocBlock') {
+          const replacement = createTableDocBlockReplacement(
+            blockId,
+            (node.attrs.blockType as string) ?? 'table',
+            Boolean(node.attrs.pageBreakBefore),
+            html,
+          );
+          editor.view.dispatch(
+            editor.state.tr.replaceWith(
+              pos,
+              pos + node.nodeSize,
+              editor.schema.nodeFromJSON(replacement),
+            ),
+          );
+          return;
+        }
+
+        const repaired = repairBlockWrapperHtml(html);
+        const replacement = blocksToEditorJson([
+          {
+            id: blockId,
+            document_id: '',
+            type: ((node.attrs.blockType as DocumentBlock['type']) ?? 'paragraph'),
+            sort: 0,
+            html: repaired,
+            content_json: null,
+            text_original: null,
+            text_translated: null,
+            translation_status: 'skipped',
+            styles_json: null,
+            meta_json: null,
+            assets_json: null,
+          },
+        ]).content?.[0];
+
+        if (replacement) {
+          editor.view.dispatch(
+            editor.state.tr.replaceWith(
+              pos,
+              pos + node.nodeSize,
+              editor.schema.nodeFromJSON(replacement),
+            ),
+          );
         }
       },
       scrollToBlock: (blockId) => {
-        if (!editorRef.current) return;
-        scrollToBlock(editorRef.current, blockId);
+        if (!editor) return;
+
+        const pos = findBlockDomPos(editor, blockId);
+        if (pos === null) return;
+
+        const dom = editor.view.nodeDOM(pos);
+        if (dom instanceof HTMLElement) {
+          dom.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          dom.classList.add('doc-flow-block--highlight');
+          window.setTimeout(() => dom.classList.remove('doc-flow-block--highlight'), 1200);
+        }
       },
       getSelectedBlockId: () => {
-        if (!editorRef.current) return activeBlockIdRef.current;
-        const selection = window.getSelection();
-        const fromSelection = getBlockIdFromNode(selection?.anchorNode ?? null, editorRef.current);
-        return fromSelection ?? activeBlockIdRef.current;
+        if (editor) {
+          const active = getActiveBlockFromEditor(editor);
+          if (active) {
+            return active.id;
+          }
+        }
+
+        return activeBlockIdRef.current;
+      },
+      getBlockHtml: (blockId, sourceBlocks) => {
+        if (!editor) {
+          return sourceBlocks.find((block) => block.id === blockId)?.html ?? null;
+        }
+
+        const pos = findBlockDomPos(editor, blockId);
+        if (pos === null) {
+          return sourceBlocks.find((block) => block.id === blockId)?.html ?? null;
+        }
+
+        const node = editor.state.doc.nodeAt(pos);
+        if (!node) {
+          return sourceBlocks.find((block) => block.id === blockId)?.html ?? null;
+        }
+
+        if (node.type.name === 'imageDocBlock') {
+          return repairBlockWrapperHtml((node.attrs.html as string) ?? '');
+        }
+
+        if (node.type.name === 'tableDocBlock') {
+          return sourceBlocks.find((block) => block.id === blockId)?.html ?? null;
+        }
+
+        return sourceBlocks.find((block) => block.id === blockId)?.html ?? null;
       },
       setBlockPageBreakBefore: (blockId, enabled) => {
-        if (!editorRef.current) return;
-        setBlockPageBreakBefore(editorRef.current, blockId, enabled);
+        if (!editor) return;
+
+        const pos = findBlockDomPos(editor, blockId);
+        if (pos === null) return;
+
+        const node = editor.state.doc.nodeAt(pos);
+        if (!node) return;
+
+        editor.view.dispatch(
+          editor.state.tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            pageBreakBefore: enabled,
+          }),
+        );
       },
     }));
 
     useEffect(() => {
-      loadedKeyRef.current = null;
-    }, [documentKey]);
-
-    useEffect(() => {
-      if (!editorRef.current || blocks.length === 0) {
+      if (!editor || pendingInsertsRef.current.length === 0) {
         return;
       }
 
-      if (loadedKeyRef.current === documentKey) {
+      const pending = [...pendingInsertsRef.current];
+      pendingInsertsRef.current = [];
+
+      pending.forEach(({ afterBlockId, block }) => {
+        insertBlockAfterNode(editor, afterBlockId, block, blocksRef.current);
+      });
+    }, [editor, blocks]);
+
+    useEffect(() => {
+      if (!editor || blocks.length === 0) {
         return;
       }
 
-      editorRef.current.innerHTML = mergeBlocksToEditorHtml(blocks);
-      protectImageBlocks(editorRef.current);
-      loadedKeyRef.current = documentKey;
-      onEditorReady?.(editorRef.current);
-    }, [blocks, documentKey, onEditorReady]);
+      const snapshot = loadedSnapshotRef.current;
+      if (snapshot?.editor === editor && snapshot.documentKey === documentKey) {
+        return;
+      }
+
+      editor.commands.setContent(blocksToEditorJson(blocks), { emitUpdate: false });
+      loadedSnapshotRef.current = { editor, documentKey };
+      onEditorReady?.(editor.view.dom);
+    }, [blocks, documentKey, editor, onEditorReady]);
 
     useEffect(() => {
-      const editor = editorRef.current;
       if (!editor) return;
 
-      const rememberActiveBlock = () => {
-        const blockId = getBlockIdFromNode(window.getSelection()?.anchorNode ?? null, editor);
-        if (!blockId) return;
+      editor.view.dom.querySelectorAll<HTMLElement>('.doc-flow-block').forEach((wrapper) => {
+        wrapper.classList.toggle(
+          'doc-flow-block--active',
+          wrapper.dataset.blockId === activeBlockId,
+        );
+      });
+    }, [activeBlockId, editor, blocks]);
 
-        activeBlockIdRef.current = blockId;
-        const wrapper = editor.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`);
-        onActiveBlockChange?.(blockId, wrapper?.dataset.blockType ?? null);
-        syncActiveBlock(editor, blockId);
-      };
+    if (!editor) {
+      return (
+        <div className="document-flow-editor-wrap document-flow-editor-wrap--loading">
+          <div className="document-flow-editor">
+            <div className="document-flow-editor__canvas" style={layoutStyle}>
+              <div className="document-flow-editor__page-frame" style={layoutStyle}>
+                <p className="document-flow-editor__loading">Загрузка редактора…</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.ctrlKey || event.metaKey) {
-          const key = event.key.toLowerCase();
-
-          if (key === 'z' && !event.shiftKey) {
-            if (onUndo?.()) {
-              event.preventDefault();
-              return;
-            }
-            event.preventDefault();
-            document.execCommand('undo');
+    return (
+      <div
+        className="document-flow-editor-wrap"
+        onDragOver={(event) => {
+          if (!onDropImage) {
             return;
           }
 
-          if ((key === 'z' && event.shiftKey) || key === 'y') {
-            if (onRedo?.()) {
-              event.preventDefault();
-              return;
-            }
+          if (Array.from(event.dataTransfer.types).includes('Files')) {
             event.preventDefault();
-            document.execCommand('redo');
+          }
+        }}
+        onDrop={(event) => {
+          if (!onDropImage) {
             return;
           }
 
-          if (key === 'b') {
-            event.preventDefault();
-            document.execCommand('bold');
-            return;
-          }
-
-          if (key === 'i') {
-            event.preventDefault();
-            document.execCommand('italic');
-            return;
-          }
-
-          if (key === 'u') {
-            event.preventDefault();
-            document.execCommand('underline');
-          }
-        }
-      };
-
-      const handlePaste = (event: ClipboardEvent) => {
-        if (!onPasteImage) {
-          return;
-        }
-
-        const items = event.clipboardData?.items;
-        if (!items) {
-          return;
-        }
-
-        for (const item of Array.from(items)) {
-          if (!item.type.startsWith('image/')) {
-            continue;
-          }
-
-          const file = item.getAsFile();
+          const file = Array.from(event.dataTransfer.files).find((item) => item.type.startsWith('image/'));
           if (!file) {
-            continue;
+            return;
           }
 
           event.preventDefault();
-          onPasteImage(file);
-          return;
-        }
-      };
-
-      const handleInput = () => {
-        onTextInput?.();
-      };
-
-      editor.addEventListener('keyup', rememberActiveBlock);
-      editor.addEventListener('mouseup', rememberActiveBlock);
-      editor.addEventListener('focusin', rememberActiveBlock);
-      editor.addEventListener('keydown', handleKeyDown);
-      editor.addEventListener('paste', handlePaste);
-      editor.addEventListener('input', handleInput);
-
-      return () => {
-        editor.removeEventListener('keyup', rememberActiveBlock);
-        editor.removeEventListener('mouseup', rememberActiveBlock);
-        editor.removeEventListener('focusin', rememberActiveBlock);
-        editor.removeEventListener('keydown', handleKeyDown);
-        editor.removeEventListener('paste', handlePaste);
-        editor.removeEventListener('input', handleInput);
-      };
-    }, [onActiveBlockChange, onPasteImage, onRedo, onTextInput, onUndo]);
-
-    useEffect(() => {
-      if (!editorRef.current) return;
-      syncActiveBlock(editorRef.current, activeBlockId);
-    }, [activeBlockId, blocks]);
-
-    const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
-      const target = event.target;
-      if (!(target instanceof Element) || !editorRef.current) return;
-
-      const wrapper = target.closest<HTMLElement>('[data-block-id]');
-      const blockId = wrapper?.dataset.blockId ?? null;
-      const blockType = wrapper?.dataset.blockType ?? null;
-
-      if (blockId) {
-        activeBlockIdRef.current = blockId;
-        onActiveBlockChange?.(blockId, blockType);
-        syncActiveBlock(editorRef.current, blockId);
-      }
-
-      if (wrapper?.dataset.blockType === 'image') {
-        onImageBlockClick?.(wrapper.dataset.blockId ?? '');
-      }
-    };
-
-    return (
-      <div className="document-flow-editor-wrap">
+          onDropImage(file);
+        }}
+      >
         <div className="document-flow-editor">
           <div className="document-flow-editor__canvas" style={layoutStyle}>
             <div className="document-flow-editor__page-frame" style={layoutStyle}>
-              <div
-                ref={editorRef}
-                className="document-flow-editor__content document-root"
-                style={layoutStyle}
-                contentEditable
-                suppressContentEditableWarning
-                spellCheck={false}
-                onClick={handleClick}
-              />
+              <EditorContent editor={editor} style={layoutStyle} />
+              <TableBubbleMenu editor={editor} />
+              <TableGutterOverlay editor={editor} />
             </div>
           </div>
         </div>

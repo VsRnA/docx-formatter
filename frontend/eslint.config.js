@@ -21,12 +21,12 @@ export default tseslint.config(
     },
     settings: {
       'boundaries/elements': [
-        { type: 'shared', pattern: 'src/shared/*' },
+        { type: 'shared', pattern: 'src/shared/**' },
         { type: 'entities', pattern: 'src/entities/*' },
         { type: 'features', pattern: 'src/features/*' },
         { type: 'widgets', pattern: 'src/widgets/*' },
         { type: 'pages', pattern: 'src/pages/*' },
-        { type: 'app', pattern: 'src/app/*' },
+        { type: 'app', pattern: 'src/app/**' },
       ],
       'boundaries/ignore': ['**/*.test.ts'],
     },

@@ -10,6 +10,7 @@ use Tests\TestCase;
 class DocumentUploadTest extends TestCase
 {
     use RefreshDatabase;
+
     public function test_store_document_requires_file(): void
     {
         $response = $this->postJson('/api/v1/documents', []);

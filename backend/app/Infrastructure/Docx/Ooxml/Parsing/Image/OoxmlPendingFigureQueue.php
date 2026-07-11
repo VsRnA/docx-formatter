@@ -2,9 +2,9 @@
 
 namespace App\Infrastructure\Docx\Ooxml\Parsing\Image;
 
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlDrawingParser;
-use App\Domain\Docx\ValueObject\ParseContext;
 use DOMElement;
 
 final class OoxmlPendingFigureQueue

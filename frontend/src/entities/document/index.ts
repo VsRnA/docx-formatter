@@ -1,4 +1,7 @@
-export { documentApi, publicDocumentApi } from './api/documentApi';
+export { documentApi } from './api/documentApi';
+export { documentAiApi } from './api/documentAiApi';
+export { documentRevisionApi } from './api/documentRevisionApi';
+export type { DocumentRevisionDetail, DocumentRevisionSummary } from './api/documentRevisionApi';
 export type {
   Document,
   DocumentStatus,

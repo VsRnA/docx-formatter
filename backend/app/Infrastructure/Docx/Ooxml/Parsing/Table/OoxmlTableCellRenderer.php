@@ -2,11 +2,11 @@
 
 namespace App\Infrastructure\Docx\Ooxml\Parsing\Table;
 
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlNamespaces;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlRunParser;
-use App\Domain\Docx\ValueObject\ParseContext;
 use App\Support\Constants\OoxmlTags;
 use DOMElement;
 

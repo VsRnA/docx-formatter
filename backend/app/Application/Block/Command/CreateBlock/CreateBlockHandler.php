@@ -33,6 +33,9 @@ final class CreateBlockHandler
             textOriginal: $payload['text_original'] ?? null,
             textTranslated: null,
             translationStatus: TranslationStatus::Skipped,
+            styles: $payload['styles_json'] ?? null,
+            meta: $payload['meta_json'] ?? null,
+            assets: $payload['assets_json'] ?? null,
         ));
 
         $document->setHtmlDraft($this->htmlBuilder->buildFromDocument($document));

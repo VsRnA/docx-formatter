@@ -4,10 +4,10 @@ namespace App\Infrastructure\Docx\Ooxml\Parsing;
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\ValueObject\BlockType;
+use App\Domain\Docx\ValueObject\ParseContext;
 use App\Infrastructure\Docx\Ooxml\OoxmlPackage;
 use App\Infrastructure\Docx\Ooxml\Parsing\Image\OoxmlFigureHtmlBuilder;
 use App\Infrastructure\Docx\Ooxml\Parsing\Image\OoxmlInlineFigureCollector;
-use App\Domain\Docx\ValueObject\ParseContext;
 use DOMElement;
 
 final class OoxmlImageBlockFactory

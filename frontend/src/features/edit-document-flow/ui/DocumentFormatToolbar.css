@@ -61,3 +61,16 @@
     width: 132px;
   }
 }
+
+.document-format-toolbar__ai-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+}
+
+.document-format-toolbar__ai-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

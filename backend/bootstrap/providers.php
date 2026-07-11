@@ -1,6 +1,11 @@
 <?php
 
+use App\Infrastructure\Providers\DomainServiceProvider;
+use App\Providers\AppServiceProvider;
+use App\Providers\HorizonServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Infrastructure\Providers\DomainServiceProvider::class,
+    AppServiceProvider::class,
+    HorizonServiceProvider::class,
+    DomainServiceProvider::class,
 ];

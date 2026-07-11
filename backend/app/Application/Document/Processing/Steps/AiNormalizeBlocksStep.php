@@ -7,8 +7,8 @@ use App\Domain\Document\Entity\Document;
 use App\Domain\Document\Port\DocumentPipelineStepPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\ProcessingStage;
-use App\Models\Document as DocumentModel;
 use App\Infrastructure\Document\Normalize\BlockNormalizationService;
+use App\Models\Document as DocumentModel;
 
 final class AiNormalizeBlocksStep implements DocumentPipelineStepPort
 {

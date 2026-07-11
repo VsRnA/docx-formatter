@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Upload, Button, message, Input, Typography } from 'antd';
+import { Upload, Button, message, Input, Typography, Select } from 'antd';
 import { InboxOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { DocumentBlock } from '@/entities/block';
 import { resourceApi } from '@/entities/resource';
 import { useMutation } from '@tanstack/react-query';
-import { buildImageHtml, parseImageBlock } from '@/shared/lib/imageBlockHtml';
+import {
+  buildImageHtml,
+  parseImageBlock,
+  patchImageBlockHtml,
+  resolveImageUrl,
+  type ImageWrap,
+} from '@/shared/lib/imageBlockHtml';
+import { getImageUploadError } from '@/shared/lib/imageUploadValidation';
 import './ImageBlockPanel.css';
 
 interface Props {
@@ -14,45 +21,72 @@ interface Props {
 }
 
 export function ImageBlockPanel({ documentId, block, onBlockUpdate }: Props) {
+  const imageUrl = resolveImageUrl(block.html, block.assets_json);
   const [alt, setAlt] = useState(() => parseImageBlock(block.html).alt);
+  const [caption, setCaption] = useState(() => parseImageBlock(block.html).caption);
+  const [wrap, setWrap] = useState<ImageWrap>(() => parseImageBlock(block.html).wrap);
   const parsed = parseImageBlock(block.html);
-  const imageUrl = (block.assets_json?.url as string | undefined) ?? parsed.src;
 
   useEffect(() => {
-    setAlt(parseImageBlock(block.html).alt);
+    const nextParsed = parseImageBlock(block.html);
+    setAlt(nextParsed.alt);
+    setCaption(nextParsed.caption);
+    setWrap(nextParsed.wrap);
   }, [block.id, block.html]);
 
   const upload = useMutation({
     mutationFn: (file: File) => resourceApi.uploadImage(documentId, file).then((r) => r.data.data),
     onSuccess: (resource) => {
-      const align = parseImageBlock(block.html).align;
-      const html = buildImageHtml(resource.url ?? '', alt, align);
+      const nextUrl = resource.url ?? '';
+      const html =
+        patchImageBlockHtml(block.html, {
+          src: nextUrl,
+          alt,
+          wrap,
+          caption,
+          align: parsed.align,
+        }) || buildImageHtml(nextUrl, alt, parsed.align, false, wrap, caption);
+
       onBlockUpdate(block.id, html, {
         resource_id: resource.id,
-        url: resource.url,
+        url: nextUrl,
       });
       message.success('Изображение загружено');
     },
     onError: (e: Error) => message.error(e.message),
   });
 
-  const applyAlt = (nextAlt: string) => {
-    if (!imageUrl) return;
-    onBlockUpdate(
-      block.id,
-      buildImageHtml(imageUrl, nextAlt, parsed.align),
-      {
-        ...(block.assets_json ?? {}),
-        url: imageUrl,
-      },
-    );
+  const applyImageMeta = (nextAlt = alt, nextWrap = wrap, nextCaption = caption) => {
+    const src = resolveImageUrl(block.html, block.assets_json);
+    if (!src) {
+      return;
+    }
+
+    const html = patchImageBlockHtml(block.html, {
+      src,
+      alt: nextAlt,
+      wrap: nextWrap,
+      caption: nextCaption,
+      align: parsed.align,
+    });
+
+    onBlockUpdate(block.id, html, {
+      ...(block.assets_json ?? {}),
+      url: src,
+    });
   };
 
   const uploadProps = {
-    accept: 'image/*',
+    accept: 'image/png,image/jpeg,image/jpg,image/gif,image/webp',
     showUploadList: false as const,
     multiple: false as const,
     beforeUpload: (file: File) => {
+      const validationError = getImageUploadError(file);
+      if (validationError) {
+        message.error(validationError);
+        return false;
+      }
+
       upload.mutate(file);
       return false;
     },
@@ -77,7 +111,7 @@ export function ImageBlockPanel({ documentId, block, onBlockUpdate }: Props) {
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">Перетащите изображение</p>
-          <p className="ant-upload-hint">PNG, JPG, WEBP</p>
+          <p className="ant-upload-hint">PNG, JPG, GIF, WEBP до 10 МБ. EMF/WMF не поддерживаются.</p>
         </Upload.Dragger>
       )}
 
@@ -98,7 +132,41 @@ export function ImageBlockPanel({ documentId, block, onBlockUpdate }: Props) {
             const nextAlt = event.target.value;
             setAlt(nextAlt);
             if (imageUrl) {
-              applyAlt(nextAlt);
+              applyImageMeta(nextAlt, wrap, caption);
+            }
+          }}
+        />
+      </div>
+
+      <div className="image-block-panel__field">
+        <span className="image-block-panel__label">Подпись под изображением</span>
+        <Input
+          value={caption}
+          placeholder="Подпись (caption)"
+          onChange={(event) => {
+            const nextCaption = event.target.value;
+            setCaption(nextCaption);
+            if (imageUrl) {
+              applyImageMeta(alt, wrap, nextCaption);
+            }
+          }}
+        />
+      </div>
+
+      <div className="image-block-panel__field">
+        <span className="image-block-panel__label">Обтекание текстом</span>
+        <Select
+          value={wrap}
+          style={{ width: '100%' }}
+          options={[
+            { label: 'В строке', value: 'inline' },
+            { label: 'Обтекание (квадрат)', value: 'square' },
+            { label: 'Плотное обтекание', value: 'tight' },
+          ]}
+          onChange={(nextWrap) => {
+            setWrap(nextWrap);
+            if (imageUrl) {
+              applyImageMeta(alt, nextWrap, caption);
             }
           }}
         />

@@ -3,9 +3,9 @@
 namespace App\Infrastructure\Document\Normalize;
 
 use App\Domain\Document\Entity\DocumentBlock as DomainBlock;
+use App\Domain\Document\Port\HtmlRendererPort;
 use App\Domain\Document\ValueObject\TranslationStatus;
 use App\Domain\Docx\Port\BlockNormalizerPort;
-use App\Domain\Document\Port\HtmlRendererPort;
 use App\Domain\Docx\ValueObject\BlockType as DomainBlockType;
 use App\Enums\BlockType;
 use App\Models\Document;

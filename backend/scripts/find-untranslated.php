@@ -10,18 +10,20 @@
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Domain\Docx\Entity\ParsedBlock;
 use App\Domain\Docx\ValueObject\BlockType;
-use App\Infrastructure\Docx\Ooxml\OoxmlNativeDocxParser;
-use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
 use App\Infrastructure\Document\Persist\BlockTranslationApplicator;
+use App\Infrastructure\Document\Translation\DocumentTranslationBatchTranslator;
+use App\Infrastructure\Document\Translation\DocumentTranslationCollector;
 use App\Infrastructure\Document\Translation\SegmentTranslationCoordinator;
 use App\Infrastructure\Document\Translation\TranslatedHtmlPatcher;
+use App\Infrastructure\Docx\Ooxml\OoxmlNativeDocxParser;
+use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
 use App\Models\Document;
 use App\Models\DocumentBlock;
-use App\Services\Ai\MockTranslationService;
+use Illuminate\Contracts\Console\Kernel;
 
 $args = array_slice($argv, 1);
 $documentId = null;
@@ -54,12 +56,12 @@ config(['services.mock.translate_enabled' => true]);
 
 $segmentHtml = new OoxmlHtmlSegmentAnnotator;
 $htmlPatcher = new TranslatedHtmlPatcher;
-$translator = app(\App\Domain\Docx\Port\TranslatorPort::class);
 $applicator = new BlockTranslationApplicator(
-    $translator,
-    new SegmentTranslationCoordinator($translator, $segmentHtml, $htmlPatcher),
+    new SegmentTranslationCoordinator($segmentHtml, $htmlPatcher),
     $htmlPatcher,
 );
+$collector = app(DocumentTranslationCollector::class);
+$batchTranslator = app(DocumentTranslationBatchTranslator::class);
 
 $document = new Document;
 $document->language_from = $languageFrom;
@@ -95,6 +97,8 @@ if ($documentId !== null) {
     $parsed = $parser->parse($docxPath);
     echo 'Blocks: '.count($parsed->blocks)."\n\n";
 
+    $translationsByText = $batchTranslator->translateAll($document, $collector->collect($parsed));
+
     foreach ($parsed->blocks as $block) {
         $html = (string) ($block->html ?? '');
         $original = trim((string) ($block->textOriginal ?? ''));
@@ -114,6 +118,7 @@ if ($documentId !== null) {
             ),
             $html,
             true,
+            $translationsByText,
         );
 
         $resultHtml = (string) ($result['html'] ?? $html);

@@ -3,14 +3,14 @@
 namespace Tests\Unit;
 
 use App\Domain\Docx\Entity\ParsedBlock;
-use App\Domain\Docx\Port\TranslatorPort;
 use App\Domain\Docx\ValueObject\BlockType;
-use App\Models\Document;
-use App\Services\Ai\MockTranslationService;
-use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
 use App\Infrastructure\Document\Persist\BlockTranslationApplicator;
 use App\Infrastructure\Document\Translation\SegmentTranslationCoordinator;
 use App\Infrastructure\Document\Translation\TranslatedHtmlPatcher;
+use App\Infrastructure\Document\Translation\TranslationCacheStore;
+use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlHtmlSegmentAnnotator;
+use App\Infrastructure\External\Ai\MockTranslationService;
+use App\Models\Document;
 use Tests\TestCase;
 
 class BlockTranslationApplicatorTest extends TestCase
@@ -21,17 +21,32 @@ class BlockTranslationApplicatorTest extends TestCase
         config(['services.mock.translate_enabled' => true]);
     }
 
-    private function makeApplicator(?TranslatorPort $translator = null): BlockTranslationApplicator
+    private function makeApplicator(): BlockTranslationApplicator
     {
-        $translator ??= new MockTranslationService;
         $segmentHtml = new OoxmlHtmlSegmentAnnotator;
         $htmlPatcher = new TranslatedHtmlPatcher;
 
         return new BlockTranslationApplicator(
-            $translator,
-            new SegmentTranslationCoordinator($translator, $segmentHtml, $htmlPatcher),
+            new SegmentTranslationCoordinator($segmentHtml, $htmlPatcher),
             $htmlPatcher,
         );
+    }
+
+    /**
+     * @param  list<string>  $texts
+     * @return array<string, string>
+     */
+    private function mockTranslations(array $texts, string $from = 'en', string $to = 'ru'): array
+    {
+        $translator = new MockTranslationService;
+        $map = [];
+
+        foreach ($texts as $text) {
+            $key = TranslationCacheStore::normalizeTextKey($text);
+            $map[$key] = $translator->translate($text, $from, $to);
+        }
+
+        return $map;
     }
 
     public function test_does_not_duplicate_rich_caption_html(): void
@@ -51,11 +66,12 @@ class BlockTranslationApplicatorTest extends TestCase
             textOriginal: 'Рисунок 1. Детальная визуализация архитектуры сети',
         );
 
+        $text = 'Рисунок 1. Детальная визуализация архитектуры сети';
         $result = $this->makeApplicator()
-            ->apply($document, $dto, $html, true);
+            ->apply($document, $dto, $html, true, $this->mockTranslations([$text], 'ru', 'en'));
 
-        $this->assertStringContainsString('Рисунок 1. Детальная визуализация архитектуры сети', strip_tags((string) $result['html']));
-        $this->assertSame(1, substr_count(strip_tags((string) $result['html']), 'Рисунок 1. Детальная визуализация архитектуры сети'));
+        $this->assertStringContainsString($text, strip_tags((string) $result['html']));
+        $this->assertSame(1, substr_count(strip_tags((string) $result['html']), $text));
     }
 
     public function test_applies_translation_to_rich_single_span_paragraph(): void
@@ -72,21 +88,10 @@ class BlockTranslationApplicatorTest extends TestCase
             textOriginal: 'INTENDED USE',
         );
 
-        $translator = new class implements \App\Domain\Docx\Port\TranslatorPort
-        {
-            public function translate(string $text, string $from = 'en', string $to = 'ru'): string
-            {
-                return 'ПРЕДНАЗНАЧЕНИЕ';
-            }
+        $translations = ['INTENDED USE' => 'ПРЕДНАЗНАЧЕНИЕ'];
 
-            public function translateMany(array $texts, string $from = 'en', string $to = 'ru'): array
-            {
-                return array_map(fn (string $text): string => $this->translate($text, $from, $to), $texts);
-            }
-        };
-
-        $result = $this->makeApplicator($translator)
-            ->apply($document, $dto, $html, true);
+        $result = $this->makeApplicator()
+            ->apply($document, $dto, $html, true, $translations);
 
         $this->assertSame('ПРЕДНАЗНАЧЕНИЕ', strip_tags((string) $result['html']));
         $this->assertStringContainsString('<strong>', (string) $result['html']);
@@ -121,7 +126,13 @@ class BlockTranslationApplicatorTest extends TestCase
         );
 
         $result = $this->makeApplicator()
-            ->apply($document, $dto, $html, true);
+            ->apply(
+                $document,
+                $dto,
+                $html,
+                true,
+                $this->mockTranslations(['Keep bystanders away.']),
+            );
 
         $this->assertStringContainsString('[RU]', strip_tags((string) $result['html']));
         $this->assertStringContainsString('data-ooxml-seg="0"', (string) $result['html']);
@@ -161,7 +172,13 @@ class BlockTranslationApplicatorTest extends TestCase
             ],
         );
 
-        $result = $this->makeApplicator()->apply($document, $dto, $html, true);
+        $result = $this->makeApplicator()->apply(
+            $document,
+            $dto,
+            $html,
+            true,
+            $this->mockTranslations([$warning]),
+        );
 
         $visible = strip_tags((string) $result['html']);
         $this->assertStringNotContainsString('EMF', $visible);
@@ -204,7 +221,13 @@ class BlockTranslationApplicatorTest extends TestCase
         );
 
         $result = $this->makeApplicator()
-            ->apply($document, $dto, $html, true);
+            ->apply(
+                $document,
+                $dto,
+                $html,
+                true,
+                $this->mockTranslations(['SECTION 3 GENERAL IDENTIFICATION']),
+            );
 
         $this->assertStringContainsString('[RU]', (string) $result['html']);
         $this->assertStringContainsString($dots, (string) $result['html']);
@@ -226,7 +249,7 @@ class BlockTranslationApplicatorTest extends TestCase
             type: BlockType::Table,
             sort: 1,
             html: $html,
-            textOriginal: "Cell A | Cell B",
+            textOriginal: 'Cell A | Cell B',
             meta: [
                 'ooxml_table_cells' => [
                     [
@@ -246,7 +269,13 @@ class BlockTranslationApplicatorTest extends TestCase
         );
 
         $result = $this->makeApplicator()
-            ->apply($document, $dto, $html, true);
+            ->apply(
+                $document,
+                $dto,
+                $html,
+                true,
+                $this->mockTranslations(['Cell A', 'Cell B']),
+            );
 
         $this->assertStringContainsString('[RU]Cell A', (string) $result['html']);
         $this->assertStringContainsString('[RU]Cell B', (string) $result['html']);
@@ -279,7 +308,13 @@ class BlockTranslationApplicatorTest extends TestCase
         );
 
         $result = $this->makeApplicator()
-            ->apply($document, $dto, $html, true);
+            ->apply(
+                $document,
+                $dto,
+                $html,
+                true,
+                $this->mockTranslations(['INTENDED USE']),
+            );
 
         $this->assertSame('[RU]INTENDED USE', trim(strip_tags((string) $result['html'])));
     }

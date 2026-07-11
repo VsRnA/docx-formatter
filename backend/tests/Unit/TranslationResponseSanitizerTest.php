@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Services\Ai\Support\TranslationResponseSanitizer;
+use App\Infrastructure\External\Ai\Support\TranslationResponseSanitizer;
 use PHPUnit\Framework\TestCase;
 
 class TranslationResponseSanitizerTest extends TestCase

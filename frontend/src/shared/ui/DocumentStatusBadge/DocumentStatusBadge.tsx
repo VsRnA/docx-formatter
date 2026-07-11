@@ -1,7 +1,6 @@
-import type { DocumentStatus } from '@/entities/document';
 import './DocumentStatusBadge.css';
 
-const STATUS_LABELS: Record<DocumentStatus, string> = {
+const STATUS_LABELS: Record<string, string> = {
   uploading: 'Загрузка',
   processing: 'Обработка',
   ready: 'Готов',
@@ -11,12 +10,12 @@ const STATUS_LABELS: Record<DocumentStatus, string> = {
 };
 
 interface Props {
-  status: DocumentStatus | string;
+  status: string;
   className?: string;
 }
 
 export function DocumentStatusBadge({ status, className }: Props) {
-  const key = status in STATUS_LABELS ? (status as DocumentStatus) : 'draft';
+  const key = status in STATUS_LABELS ? status : 'draft';
   const label = STATUS_LABELS[key] ?? status;
 
   return (

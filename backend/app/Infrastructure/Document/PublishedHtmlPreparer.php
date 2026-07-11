@@ -104,15 +104,19 @@ HTML;
 
     private function inlineImages(string $html): string
     {
+        $maxBytes = max(1, (int) config('app.published_inline_image_max_mb', 2)) * 1024 * 1024;
+        $totalBudget = max(1, (int) config('app.published_inline_image_total_budget_mb', 32)) * 1024 * 1024;
+        $inlinedBytes = 0;
+
         return (string) preg_replace_callback(
             '/<img\b([^>]*)\bsrc=(["\'])([^"\']+)\2([^>]*)>/i',
-            function (array $matches): string {
+            function (array $matches) use ($maxBytes, $totalBudget, &$inlinedBytes): string {
                 $before = $matches[1];
                 $quote = $matches[2];
                 $src = $matches[3];
                 $after = $matches[4];
 
-                $inlined = $this->inlineSrc($src);
+                $inlined = $this->inlineSrc($src, $maxBytes, $totalBudget, $inlinedBytes);
                 if ($inlined === null) {
                     return $matches[0];
                 }
@@ -123,15 +127,28 @@ HTML;
         );
     }
 
-    private function inlineSrc(string $src): ?string
+    private function inlineSrc(string $src, int $maxBytes, int $totalBudget, int &$inlinedBytes): ?string
     {
         $key = EditorHtmlNormalizer::storageKeyFromImageSrc($src);
         if ($key === null || ! $this->storage->exists($key)) {
             return null;
         }
 
+        $size = $this->storage->size($key);
+        if ($size !== null && ($size > $maxBytes || $inlinedBytes + $size > $totalBudget)) {
+            return null;
+        }
+
         $binary = $this->storage->get($key);
+        if ($size === null) {
+            $size = strlen($binary);
+            if ($size > $maxBytes || $inlinedBytes + $size > $totalBudget) {
+                return null;
+            }
+        }
+
         $mime = $this->mimeFromKey($key);
+        $inlinedBytes += $size;
 
         return 'data:'.$mime.';base64,'.base64_encode($binary);
     }

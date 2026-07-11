@@ -120,6 +120,46 @@
   max-width: 100%;
 }
 
+.doc-image--flowing {
+  max-width: 100%;
+}
+
+.doc-image--flowing:not([data-ooxml-width]) {
+  width: 100%;
+}
+
+.doc-image--flowing img {
+  height: auto;
+}
+
+.doc-image--flowing:not([data-ooxml-width]) img {
+  width: 100%;
+  max-width: 100%;
+}
+
+.doc-image-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--doc-image-grid-cols, 2), minmax(0, 1fr));
+  gap: 12px;
+  margin: 0.75em 0;
+  width: 100%;
+}
+
+.doc-image-grid .doc-image {
+  margin: 0;
+}
+
+.doc-image-grid .doc-image img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.doc-paragraph--image-grid {
+  margin: 0.75em 0;
+}
+
 .doc-image img {
   display: block;
   max-width: 100%;

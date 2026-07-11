@@ -15,5 +15,6 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="MOCK_STORAGE" value="true"/>
     </php>
 </phpunit>

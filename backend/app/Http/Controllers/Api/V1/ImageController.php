@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\DocumentResourceItemResource;
 use App\Models\Document;
 use App\Models\DocumentResource;
+use App\Support\ImageUploadValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -26,7 +27,10 @@ class ImageController extends Controller
             'file' => ['required', 'file', 'image', 'max:10240'],
         ]);
 
-        $resource = $this->uploadImage->execute($document->id, $request->file('file'));
+        $file = $request->file('file');
+        ImageUploadValidator::assertSupported($file);
+
+        $resource = $this->uploadImage->execute($document->id, $file);
 
         return new DocumentResourceItemResource($resource);
     }
@@ -37,8 +41,11 @@ class ImageController extends Controller
             'file' => ['required', 'file', 'image', 'max:10240'],
         ]);
 
+        $file = $request->file('file');
+        ImageUploadValidator::assertSupported($file);
+
         return new DocumentResourceItemResource(
-            $this->replaceImage->execute($resource, $request->file('file'))
+            $this->replaceImage->execute($resource, $file)
         );
     }
 

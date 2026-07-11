@@ -10,8 +10,9 @@ use App\Domain\Document\ValueObject\DocumentStatus;
 use App\Domain\Docx\ValueObject\BlockType;
 use App\Domain\Shared\Port\FileStoragePort;
 use App\DTO\Document\SaveDocumentDraftDto;
-use App\Models\Document as DocumentModel;
 use App\Infrastructure\Document\EditorHtmlNormalizer;
+use App\Infrastructure\Document\Revision\DocumentRevisionService;
+use App\Models\Document as DocumentModel;
 
 final class SaveDocumentDraftHandler
 {
@@ -21,6 +22,7 @@ final class SaveDocumentDraftHandler
         private readonly HtmlBuilderPort $htmlBuilder,
         private readonly EditorHtmlNormalizer $htmlNormalizer,
         private readonly FileStoragePort $storage,
+        private readonly DocumentRevisionService $revisions,
     ) {}
 
     public function execute(SaveDocumentDraftDto $dto): DocumentModel
@@ -55,6 +57,10 @@ final class SaveDocumentDraftHandler
         $document->setHtmlDraft($this->htmlBuilder->buildFromDocument($document));
         $document->setStatus(DocumentStatus::Draft);
         $this->documents->save($document);
+
+        if ($dto->createAutosaveCheckpoint) {
+            $this->revisions->maybeCreateAutosaveCheckpoint($dto->documentId);
+        }
 
         return DocumentModel::query()->findOrFail($dto->documentId);
     }

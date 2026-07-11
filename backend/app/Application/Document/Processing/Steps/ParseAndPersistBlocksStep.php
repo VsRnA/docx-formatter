@@ -2,17 +2,18 @@
 
 namespace App\Application\Document\Processing\Steps;
 
-use App\Application\Docx\Service\BlockPersistenceService;
 use App\Application\Document\Processing\DocumentProcessingState;
-use App\Domain\Docx\Port\DocxParserPort;
-use App\Domain\Docx\Service\CoveragePolicy;
+use App\Application\Docx\Service\BlockPersistenceService;
 use App\Domain\Document\Entity\Document;
 use App\Domain\Document\Port\DocumentPipelineStepPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\ProcessingStage;
+use App\Domain\Docx\Entity\ParsedDocument;
+use App\Domain\Docx\Port\DocxParserPort;
+use App\Domain\Docx\Service\CoveragePolicy;
 use App\Infrastructure\Document\CoverageSourceTextExtractor;
-use App\Models\Document as DocumentModel;
 use App\Infrastructure\Docx\Ooxml\OoxmlXml;
+use App\Models\Document as DocumentModel;
 use RuntimeException;
 
 final class ParseAndPersistBlocksStep implements DocumentPipelineStepPort
@@ -65,7 +66,7 @@ final class ParseAndPersistBlocksStep implements DocumentPipelineStepPort
         return $this->documents->find($document->id());
     }
 
-    private function blocksPlainText(\App\Domain\Docx\Entity\ParsedDocument $parsed): string
+    private function blocksPlainText(ParsedDocument $parsed): string
     {
         $parts = [];
         foreach ($parsed->blocks as $block) {

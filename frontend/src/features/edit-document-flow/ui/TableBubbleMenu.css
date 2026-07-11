@@ -1,0 +1,30 @@
+.document-table-bubble-menu {
+  display: flex;
+  flex-wrap: nowrap;
+  max-width: none;
+  padding: 4px 6px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.document-table-bubble-menu__row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+}
+
+.document-table-bubble-menu__divider {
+  height: 18px;
+  margin: 0 2px;
+}
+
+.document-table-bubble-menu__more {
+  min-width: 180px;
+}
+
+.document-table-bubble-menu .ant-btn {
+  font-size: 12px;
+}

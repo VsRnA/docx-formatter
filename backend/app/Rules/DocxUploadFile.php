@@ -10,7 +10,6 @@ use Illuminate\Translation\PotentiallyTranslatedString;
 
 class DocxUploadFile implements ValidationRule
 {
-
     public function __construct(
         private readonly int $maxKb,
     ) {}

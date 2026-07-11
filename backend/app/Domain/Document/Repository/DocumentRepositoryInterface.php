@@ -14,4 +14,6 @@ interface DocumentRepositoryInterface
     public function insert(Document $document): void;
 
     public function save(Document $document): void;
+
+    public function delete(DocumentId $id): void;
 }

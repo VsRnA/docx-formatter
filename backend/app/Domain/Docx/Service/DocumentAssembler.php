@@ -12,8 +12,6 @@ final class DocumentAssembler
     public function __construct(
         private readonly ListBlocksGrouper $listGrouper,
         private readonly ConsecutiveBlocksDeduplicator $deduplicator,
-        private readonly AnchoredCalloutBlockMerger $calloutMerger,
-        private readonly FigureGalleryCaptionMerger $figureGalleryMerger,
     ) {}
 
     /**
@@ -21,8 +19,6 @@ final class DocumentAssembler
      */
     public function assemble(string $fallbackTitle, array $blocks, ParseContext $context): ParsedDocument
     {
-        $blocks = $this->calloutMerger->merge($blocks);
-        $blocks = $this->figureGalleryMerger->merge($blocks);
         $blocks = $this->deduplicator->deduplicate($blocks);
         $blocks = $this->listGrouper->group($blocks);
         $title = $fallbackTitle;

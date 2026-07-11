@@ -2,12 +2,12 @@
 
 namespace App\Infrastructure\Document\Persist;
 
-use App\Domain\Shared\Port\FileStoragePort;
-use App\Domain\Docx\Entity\ParsedBlock;
-use App\Enums\ResourceType;
-use App\Models\Document;
 use App\Domain\Document\Repository\ResourceRepositoryInterface;
+use App\Domain\Docx\Entity\ParsedBlock;
+use App\Domain\Shared\Port\FileStoragePort;
+use App\Enums\ResourceType;
 use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlImageBlockFactory;
+use App\Models\Document;
 use App\Support\TempFileManager;
 
 class BlockImageAssetService
@@ -67,15 +67,19 @@ class BlockImageAssetService
             }
 
             $uploaded = $uploadedByRelationship[$relationshipId];
-            $figure = $this->imageFigures->buildUploadedFigure($uploaded['url'], $attributes);
-            $html = $this->replacePendingFigure($html, $marker, $figure);
+            $isUnplaced = (bool) ($attributes['unplaced'] ?? false);
 
-            $assets['table_images'][] = [
-                'marker' => $marker,
-                'relationship_id' => $relationshipId,
-                'resource_id' => $uploaded['resource_id'],
-                'url' => $uploaded['url'],
-            ];
+            if (! $isUnplaced) {
+                $figure = $this->imageFigures->buildUploadedFigure($uploaded['url'], $attributes);
+                $html = $this->replacePendingFigure($html, $marker, $figure);
+
+                $assets['table_images'][] = [
+                    'marker' => $marker,
+                    'relationship_id' => $relationshipId,
+                    'resource_id' => $uploaded['resource_id'],
+                    'url' => $uploaded['url'],
+                ];
+            }
         }
 
         return ['html' => $html, 'assets' => $assets];

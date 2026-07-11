@@ -3,8 +3,8 @@
 namespace Tests\Unit;
 
 use App\Domain\Docx\ValueObject\BlockType;
-use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlFallbackBlockFactory;
 use App\Domain\Docx\ValueObject\ParseContext;
+use App\Infrastructure\Docx\Ooxml\Parsing\OoxmlFallbackBlockFactory;
 use App\Support\Constants\HtmlCssClasses;
 use DOMDocument;
 use Tests\TestCase;

@@ -13,6 +13,7 @@ class DocumentBlock extends Model
     use HasUuids;
 
     protected $fillable = [
+        'id',
         'document_id',
         'type',
         'sort',

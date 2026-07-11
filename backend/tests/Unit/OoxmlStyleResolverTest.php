@@ -62,7 +62,7 @@ class OoxmlStyleResolverTest extends TestCase
         $this->assertSame(11.0, $defaults['sizePt']);
     }
 
-    private function stylesDocumentWithDocDefaults(): \DOMDocument
+    private function stylesDocumentWithDocDefaults(): DOMDocument
     {
         $w = OoxmlNamespaces::W;
         $xml = <<<XML
@@ -84,13 +84,13 @@ class OoxmlStyleResolverTest extends TestCase
 </w:styles>
 XML;
 
-        $document = new \DOMDocument;
+        $document = new DOMDocument;
         $document->loadXML($xml);
 
         return $document;
     }
 
-    private function stylesDocument(): \DOMDocument
+    private function stylesDocument(): DOMDocument
     {
         $w = OoxmlNamespaces::W;
         $xml = <<<XML
