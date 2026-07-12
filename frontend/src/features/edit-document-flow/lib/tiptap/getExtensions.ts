@@ -14,6 +14,7 @@ import { TextDocBlock } from './textDocBlock';
 import { ImageDocBlock, type ImageDocBlockOptions } from './imageDocBlock';
 import { TableDocBlock } from './tableDocBlock';
 import { TabKeyboardExtension } from './tabKeyboard';
+import { OrphanBlockIdPlugin } from './orphanBlockIdPlugin';
 import { getTableExtensions } from './tableExtensions';
 
 export { getTableExtensions } from './tableExtensions';
@@ -47,6 +48,7 @@ export function getDocumentEditorExtensions(options?: ImageDocBlockOptions) {
       types: ['heading', 'paragraph'],
     }),
     TabKeyboardExtension,
+    OrphanBlockIdPlugin,
   ];
 }
 

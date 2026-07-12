@@ -10,6 +10,10 @@ import { getInnerContentExtensions, getTableContentExtensions } from './getExten
 
 const ATOM_BLOCK_TYPES = new Set(['image']);
 
+function createBlockId(): string {
+  return crypto.randomUUID();
+}
+
 function defaultTableNodeJson(): JSONContent {
   try {
     const json = generateJSON(defaultTableHtml(), getTableContentExtensions());
@@ -174,7 +178,7 @@ export function extractBlockUpdatesFromEditor(
     }
 
     updates.push({
-      id: blockId ?? source?.id ?? `unknown-${index}`,
+      id: blockId ?? source?.id ?? createBlockId(),
       type: (ATOM_BLOCK_TYPES.has(blockType) ? blockType : source?.type ?? blockType) as DocumentBlock['type'],
       sort: index,
       html,

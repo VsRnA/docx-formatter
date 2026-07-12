@@ -2,11 +2,13 @@
 
 namespace App\Application\Document\Command\SaveDocumentDraft;
 
+use App\Domain\Document\Entity\DocumentBlock;
 use App\Domain\Document\Port\HtmlBuilderPort;
 use App\Domain\Document\Port\HtmlSanitizerPort;
 use App\Domain\Document\Repository\DocumentRepositoryInterface;
 use App\Domain\Document\ValueObject\DocumentId;
 use App\Domain\Document\ValueObject\DocumentStatus;
+use App\Domain\Document\ValueObject\TranslationStatus;
 use App\Domain\Docx\ValueObject\BlockType;
 use App\Domain\Shared\Port\FileStoragePort;
 use App\DTO\Document\SaveDocumentDraftDto;
@@ -30,11 +32,33 @@ final class SaveDocumentDraftHandler
         $document = $this->documents->find(new DocumentId($dto->documentId));
 
         foreach ($dto->blocks as $blockDto) {
-            $block = $document->findBlock($blockDto->id);
             $html = $this->htmlNormalizer->normalize($blockDto->html ?? '');
             $html = $this->sanitizer->sanitize($html);
             $html = $this->htmlNormalizer->normalizeImageStorageUrls($html);
 
+            if (! $document->hasBlock($blockDto->id)) {
+                $type = BlockType::tryFrom($blockDto->type) ?? BlockType::Paragraph;
+                $assets = $type === BlockType::Image
+                    ? $this->resolveImageAssets($html, $blockDto->assets)
+                    : $blockDto->assets;
+
+                $document->addBlock(new DocumentBlock(
+                    id: $blockDto->id,
+                    type: $type,
+                    sort: $blockDto->sort,
+                    html: $html,
+                    textOriginal: null,
+                    textTranslated: null,
+                    translationStatus: TranslationStatus::Skipped,
+                    styles: $blockDto->styles,
+                    meta: is_array($blockDto->meta) ? $blockDto->meta : null,
+                    assets: $assets,
+                ));
+
+                continue;
+            }
+
+            $block = $document->findBlock($blockDto->id);
             $meta = is_array($blockDto->meta) ? $blockDto->meta : ($block->meta ?? []);
             if (($blockDto->html ?? '') !== ($block->html ?? '')) {
                 $meta['content_edited'] = true;

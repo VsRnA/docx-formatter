@@ -218,6 +218,17 @@ final class Document
         return $max;
     }
 
+    public function hasBlock(string $blockId): bool
+    {
+        foreach ($this->blocks as $block) {
+            if ($block->id === $blockId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function findBlock(string $blockId): DocumentBlock
     {
         foreach ($this->blocks as $block) {

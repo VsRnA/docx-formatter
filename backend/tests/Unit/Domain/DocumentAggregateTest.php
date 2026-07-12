@@ -3,11 +3,14 @@
 namespace Tests\Unit\Domain;
 
 use App\Domain\Document\Entity\Document;
+use App\Domain\Document\Entity\DocumentBlock;
 use App\Domain\Document\ValueObject\DocumentId;
 use App\Domain\Document\ValueObject\DocumentMeta;
 use App\Domain\Document\ValueObject\DocumentStatus;
 use App\Domain\Document\ValueObject\ParseCoverage;
 use App\Domain\Document\ValueObject\ProcessingStage;
+use App\Domain\Document\ValueObject\TranslationStatus;
+use App\Domain\Docx\ValueObject\BlockType;
 use PHPUnit\Framework\TestCase;
 
 final class DocumentAggregateTest extends TestCase
@@ -53,6 +56,23 @@ final class DocumentAggregateTest extends TestCase
 
         $this->assertTrue($withTranslation->shouldTranslate());
         $this->assertFalse($withoutTranslation->shouldTranslate());
+    }
+
+    public function test_has_block_returns_true_for_existing_block(): void
+    {
+        $document = $this->makeDocument();
+        $document->addBlock(new DocumentBlock(
+            id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            type: BlockType::Paragraph,
+            sort: 0,
+            html: '<p>Block</p>',
+            textOriginal: null,
+            textTranslated: null,
+            translationStatus: TranslationStatus::Skipped,
+        ));
+
+        $this->assertTrue($document->hasBlock('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
+        $this->assertFalse($document->hasBlock('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'));
     }
 
     private function makeDocument(?DocumentMeta $meta = null): Document
