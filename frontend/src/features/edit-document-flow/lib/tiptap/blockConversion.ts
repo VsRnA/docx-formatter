@@ -1,15 +1,53 @@
 import { generateHTML, generateJSON } from '@tiptap/html';
 import type { JSONContent } from '@tiptap/core';
+import { getSchema } from '@tiptap/core';
 import type { Editor } from '@tiptap/react';
+import { Fragment } from '@tiptap/pm/model';
 import type { DocumentBlock } from '@/entities/block';
 import type { SaveDraftBlockPayload } from '@/entities/document';
 import { defaultTableHtml } from '../defaultBlockHtml';
 import { repairBlockWrapperHtml } from '../blockEditorHtml';
 import { hasPageBreakBefore, mergeBlockMetaWithPageBreak } from '../blockPageBreak';
-import { getInnerContentExtensions, getTableContentExtensions } from './getExtensions';
+import { getDocumentEditorExtensions, getInnerContentExtensions, getTableContentExtensions } from './getExtensions';
 import { createUuid } from '@/shared/lib/uuid';
 
 const ATOM_BLOCK_TYPES = new Set(['image']);
+const DEFAULT_INNER_BLOCK: JSONContent = { type: 'paragraph' };
+
+let cachedEditorSchema: ReturnType<typeof getSchema> | null = null;
+
+function getEditorSchema() {
+  if (!cachedEditorSchema) {
+    cachedEditorSchema = getSchema(getDocumentEditorExtensions());
+  }
+
+  return cachedEditorSchema;
+}
+
+function normalizeTextDocBlockContent(content: JSONContent[]): JSONContent[] {
+  const schema = getEditorSchema();
+  const textDocBlock = schema.nodes.textDocBlock;
+
+  if (!content.length) {
+    return [DEFAULT_INNER_BLOCK];
+  }
+
+  try {
+    const fragment = Fragment.from(content.map((item) => schema.nodeFromJSON(item)));
+    if (textDocBlock.validContent(fragment)) {
+      return content;
+    }
+
+    const filled = textDocBlock.createAndFill(null, fragment);
+    if (filled) {
+      return filled.content.toJSON() as JSONContent[];
+    }
+  } catch {
+    // fall through to default paragraph
+  }
+
+  return [DEFAULT_INNER_BLOCK];
+}
 
 function createBlockId(): string {
   return createUuid();
@@ -74,7 +112,9 @@ function parseInnerHtml(html: string): JSONContent[] {
 
   try {
     const json = generateJSON(trimmed, getInnerContentExtensions());
-    return json.content?.length ? json.content : [{ type: 'paragraph' }];
+    return normalizeTextDocBlockContent(
+      json.content?.length ? json.content : [DEFAULT_INNER_BLOCK],
+    );
   } catch {
     return [{ type: 'paragraph', content: [{ type: 'text', text: trimmed }] }];
   }

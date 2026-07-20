@@ -1,11 +1,16 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { AttrStep } from '@tiptap/pm/transform';
 import { createUuid } from '@/shared/lib/uuid';
 
 const DOC_BLOCK_TYPES = new Set(['textDocBlock', 'imageDocBlock', 'tableDocBlock']);
 
 function createBlockId(): string {
   return createUuid();
+}
+
+function hasBlockId(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
 }
 
 export const OrphanBlockIdPlugin = Extension.create({
@@ -25,14 +30,27 @@ export const OrphanBlockIdPlugin = Extension.create({
             }
 
             const blockId = node.attrs.blockId as string | null;
-            if (blockId) {
+            if (hasBlockId(blockId)) {
               return;
             }
 
-            tr.setNodeMarkup(offset, undefined, {
-              ...node.attrs,
-              blockId: createBlockId(),
-            });
+            const nextBlockId = createBlockId();
+
+            if (!node.type.validContent(node.content)) {
+              const fixed = node.type.createAndFill({
+                ...node.attrs,
+                blockId: nextBlockId,
+              });
+
+              if (fixed) {
+                tr.replaceWith(offset, offset + node.nodeSize, fixed);
+                modified = true;
+              }
+
+              return;
+            }
+
+            tr.step(new AttrStep(offset, 'blockId', nextBlockId));
             modified = true;
           });
 
