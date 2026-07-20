@@ -7,11 +7,12 @@ import { defaultTableHtml } from '../defaultBlockHtml';
 import { repairBlockWrapperHtml } from '../blockEditorHtml';
 import { hasPageBreakBefore, mergeBlockMetaWithPageBreak } from '../blockPageBreak';
 import { getInnerContentExtensions, getTableContentExtensions } from './getExtensions';
+import { createUuid } from '@/shared/lib/uuid';
 
 const ATOM_BLOCK_TYPES = new Set(['image']);
 
 function createBlockId(): string {
-  return crypto.randomUUID();
+  return createUuid();
 }
 
 function defaultTableNodeJson(): JSONContent {
