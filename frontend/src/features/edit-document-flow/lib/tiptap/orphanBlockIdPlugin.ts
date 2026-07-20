@@ -1,10 +1,11 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { createUuid } from '@/shared/lib/uuid';
 
 const DOC_BLOCK_TYPES = new Set(['textDocBlock', 'imageDocBlock', 'tableDocBlock']);
 
 function createBlockId(): string {
-  return crypto.randomUUID();
+  return createUuid();
 }
 
 export const OrphanBlockIdPlugin = Extension.create({
