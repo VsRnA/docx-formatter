@@ -74,7 +74,7 @@ function parseInnerHtml(html: string): JSONContent[] {
 
   try {
     const json = generateJSON(trimmed, getInnerContentExtensions());
-    return json.content ?? [{ type: 'paragraph' }];
+    return json.content?.length ? json.content : [{ type: 'paragraph' }];
   } catch {
     return [{ type: 'paragraph', content: [{ type: 'text', text: trimmed }] }];
   }
